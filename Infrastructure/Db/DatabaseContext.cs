@@ -11,6 +11,7 @@ namespace minimal_api.Infrastructure.Db
     {
         private readonly IConfiguration _configurationAppSettings;
         public DbSet<Administrator> Administrators { get; set; } = default;
+        public DbSet<Vehicle> Vehicles { get; set; } = default;
         public DatabaseContext(IConfiguration configurationAppSettings)
         {
             _configurationAppSettings = configurationAppSettings;
