@@ -26,5 +26,17 @@ namespace minimal_api.Infrastructure.Db
                 }
             }
         }
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<Administrator>().HasData(
+                new Administrator
+                {
+                    Id = 1,
+                    Email = "dev@tester.com",
+                    Password = "123456789",
+                    Role = "ADM"
+                }
+            );
+        }
     }
 }
