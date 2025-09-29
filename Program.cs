@@ -15,6 +15,9 @@ public class Program
 
         builder.Services.AddScoped<IAdministratorService, AdministratorService>();
 
+        builder.Services.AddEndpointsApiExplorer();
+        builder.Services.AddSwaggerGen();
+
         builder.Services.AddDbContext<DatabaseContext>(options =>
         {
             options.UseMySql(
@@ -37,6 +40,9 @@ public class Program
                 return Results.Unauthorized();
             }
         });
+
+        app.UseSwagger();
+        app.UseSwaggerUI();
 
         app.Run();
     }
