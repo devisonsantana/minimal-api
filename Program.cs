@@ -1,5 +1,8 @@
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using minimal_api.Domain.DTOs;
+using minimal_api.Domain.Interfaces;
+using minimal_api.Domain.Services;
 using minimal_api.Infrastructure.Db;
 
 namespace minimal_api;
@@ -9,6 +12,9 @@ public class Program
     public static void Main(string[] args)
     {
         var builder = WebApplication.CreateBuilder(args);
+
+        builder.Services.AddScoped<IAdministratorService, AdministratorService>();
+
         builder.Services.AddDbContext<DatabaseContext>(options =>
         {
             options.UseMySql(
@@ -19,9 +25,10 @@ public class Program
         var app = builder.Build();
 
         app.MapGet("/", () => "Hello World!");
-        app.MapPost("/login", (LoginDTO loginDTO) =>
+
+        app.MapPost("/login", ([FromBody] LoginDTO loginDTO, IAdministratorService administrator) =>
         {
-            if (loginDTO.Email == "adm@test.com" && loginDTO.Password == "123456")
+            if (administrator.Login(loginDTO) != null)
             {
                 return Results.Ok("Login Successfuly");
             }
