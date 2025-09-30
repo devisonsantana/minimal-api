@@ -62,6 +62,12 @@ public class Program
             vehicleService.Save(vehicle);
             return Results.Created($"/vehicle/{vehicle.Id}", vehicle);
         });
+
+        app.MapGet("/vehicle", (int? page, IVehicleService vehicleService) =>
+        {
+            var vehicles = vehicleService.FindAll(page);
+            return Results.Ok<List<Vehicle>>(vehicles);
+        });
         #endregion
 
         #region Using Swagger and SwaggerIU
