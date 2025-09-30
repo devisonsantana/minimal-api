@@ -63,10 +63,28 @@ public class Program
             return Results.Created($"/vehicle/{vehicle.Id}", vehicle);
         }).WithTags("Vehicles");
 
-        app.MapGet("/vehicle", (int? page, IVehicleService vehicleService) =>
+        app.MapGet("/vehicle", ([FromQuery] int? page, IVehicleService vehicleService) =>
         {
             var vehicles = vehicleService.FindAll(page);
             return Results.Ok<List<Vehicle>>(vehicles);
+        }).WithTags("Vehicles");
+
+        app.MapGet("/vehicle/{id}", ([FromRoute] int id, IVehicleService vehicleService) =>
+        {
+            var vehicle = vehicleService.FindById(id);
+            if (vehicle != null) return Results.Ok(vehicle);
+            return Results.NotFound();
+        }).WithTags("Vehicles");
+
+        app.MapPut("/vehicle/{id}", ([FromRoute] int id, VehicleDTO vehicleDTO, IVehicleService vehicleService) =>
+        {
+            var vehicle = vehicleService.FindById(id);
+            if (vehicle == null) return Results.NotFound("Vehicle can't be updated because it doesn't exists on our database");
+            vehicle.Name = vehicleDTO.Name;
+            vehicle.Brand = vehicleDTO.Brand;
+            vehicle.Year = vehicleDTO.Year;
+            vehicleService.Update(vehicle);
+            return Results.NoContent();
         }).WithTags("Vehicles");
         #endregion
 
