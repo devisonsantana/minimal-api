@@ -86,6 +86,14 @@ public class Program
             vehicleService.Update(vehicle);
             return Results.NoContent();
         }).WithTags("Vehicles");
+
+        app.MapDelete("/vehicle/{id}", ([FromRoute] int id, IVehicleService vehicleService) =>
+        {
+            var vehicle = vehicleService.FindById(id);
+            if (vehicle == null) return Results.NotFound("Vehicle can't be deleted because it doesn't exists on our database");
+            vehicleService.Delete(vehicle);
+            return Results.NoContent();
+        }).WithTags("Vehicles");
         #endregion
 
         #region Using Swagger and SwaggerIU
