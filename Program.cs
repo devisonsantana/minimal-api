@@ -32,11 +32,11 @@ public class Program
         var app = builder.Build();
         #endregion
 
-        #region Home
-        app.MapGet("/", () => Results.Json(new Home()));
+        #region Home endpoint
+        app.MapGet("/", () => Results.Json(new Home())).WithTags("Home");
         #endregion
 
-        #region Administrator
+        #region Administrator endpoint
         app.MapPost("/administrator/login", ([FromBody] LoginDTO loginDTO, IAdministratorService administrator) =>
         {
             if (administrator.Login(loginDTO) != null)
@@ -47,7 +47,7 @@ public class Program
             {
                 return Results.Unauthorized();
             }
-        });
+        }).WithTags("Administrators");
         #endregion
 
         #region Vehicle endpoint
@@ -61,13 +61,13 @@ public class Program
             };
             vehicleService.Save(vehicle);
             return Results.Created($"/vehicle/{vehicle.Id}", vehicle);
-        });
+        }).WithTags("Vehicles");
 
         app.MapGet("/vehicle", (int? page, IVehicleService vehicleService) =>
         {
             var vehicles = vehicleService.FindAll(page);
             return Results.Ok<List<Vehicle>>(vehicles);
-        });
+        }).WithTags("Vehicles");
         #endregion
 
         #region Using Swagger and SwaggerIU
