@@ -32,40 +32,61 @@ public class Program
         var app = builder.Build();
         #endregion
 
+        ErrorValidation ValidateDTO(VehicleDTO vehicleDTO)
+        {
+            var validations = new ErrorValidation();
+            if (string.IsNullOrEmpty(vehicleDTO.Name))
+                validations.Messages.Add("Vehicle name cannot be empty");
+            if (string.IsNullOrEmpty(vehicleDTO.Brand))
+                validations.Messages.Add("Vehicle brand cannot be empty");
+            if (vehicleDTO.Year < 1769)
+                validations.Messages.Add("Vehicle year cannot be too old, just above 1769");
+            if (vehicleDTO.Year >= DateTime.Now.Year)
+                validations.Messages.Add("Vehicle year cannot be in the future");
+            return validations;
+        }
+
         #region Home endpoint
         app.MapGet("/", () => Results.Json(new Home())).WithTags("Home");
         #endregion
 
         #region Administrator endpoint
         app.MapPost("/administrator/login", ([FromBody] LoginDTO loginDTO, IAdministratorService administrator) =>
-        {
-            if (administrator.Login(loginDTO) != null)
             {
-                return Results.Ok("Login Successfuly");
-            }
-            else
-            {
-                return Results.Unauthorized();
-            }
-        }).WithTags("Administrators");
+                if (administrator.Login(loginDTO) != null)
+                {
+                    return Results.Ok("Login Successfuly");
+                }
+                else
+                {
+                    return Results.Unauthorized();
+                }
+            }).WithTags("Administrators");
         #endregion
 
         #region Vehicle endpoint
         app.MapPost("/vehicle", ([FromBody] VehicleDTO vehicleDTO, IVehicleService vehicleService) =>
         {
+            var validation = ValidateDTO(vehicleDTO);
+            if (validation.Messages.Count > 0)
+                return Results.BadRequest(validation);
+
             var vehicle = new Vehicle
             {
                 Name = vehicleDTO.Name,
                 Brand = vehicleDTO.Brand,
                 Year = vehicleDTO.Year
             };
+
             vehicleService.Save(vehicle);
+
             return Results.Created($"/vehicle/{vehicle.Id}", vehicle);
         }).WithTags("Vehicles");
 
         app.MapGet("/vehicle", ([FromQuery] int? page, IVehicleService vehicleService) =>
         {
             var vehicles = vehicleService.FindAll(page);
+
             return Results.Ok<List<Vehicle>>(vehicles);
         }).WithTags("Vehicles");
 
@@ -73,6 +94,7 @@ public class Program
         {
             var vehicle = vehicleService.FindById(id);
             if (vehicle != null) return Results.Ok(vehicle);
+
             return Results.NotFound();
         }).WithTags("Vehicles");
 
@@ -80,10 +102,16 @@ public class Program
         {
             var vehicle = vehicleService.FindById(id);
             if (vehicle == null) return Results.NotFound("Vehicle can't be updated because it doesn't exists on our database");
+
+            var validation = ValidateDTO(vehicleDTO);
+            if (validation.Messages.Count > 0)
+                return Results.BadRequest(validation);
+
             vehicle.Name = vehicleDTO.Name;
             vehicle.Brand = vehicleDTO.Brand;
             vehicle.Year = vehicleDTO.Year;
             vehicleService.Update(vehicle);
+
             return Results.NoContent();
         }).WithTags("Vehicles");
 
