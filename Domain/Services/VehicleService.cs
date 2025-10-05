@@ -32,9 +32,14 @@ namespace minimal_api.Domain.Services
                 query = query.Where(v => EF.Functions.Like(v.Name.ToLower(), $"%{name}%"));
             }
             int itemsPerPage = 10;
-            if(page != null)
-                query = query.Skip(((int) page - 1) * itemsPerPage).Take(itemsPerPage);
-            return query.ToList();
+            if (page != null)
+            {
+                return query.Skip(((int)page - 1) * itemsPerPage).Take(itemsPerPage).ToList();
+            }
+            else
+            {
+                return query.Skip((1 - 1) * itemsPerPage).Take(itemsPerPage).ToList();
+            }
         }
 
         public Vehicle? FindById(int id)

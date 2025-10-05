@@ -32,6 +32,7 @@ public class Program
         var app = builder.Build();
         #endregion
 
+        #region Validator
         ErrorValidation ValidateDTO(VehicleDTO vehicleDTO)
         {
             var validations = new ErrorValidation();
@@ -45,6 +46,7 @@ public class Program
                 validations.Messages.Add("Vehicle year cannot be in the future");
             return validations;
         }
+        #endregion
 
         #region Home endpoint
         app.MapGet("/", () => Results.Json(new Home())).WithTags("Home");
