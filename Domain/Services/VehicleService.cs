@@ -54,6 +54,12 @@ namespace minimal_api.Domain.Services
             _dbContext.SaveChanges();
         }
 
+        public void SaveAll(List<Vehicle> vehicles)
+        {
+            _dbContext.Vehicles.AddRange(vehicles);
+            _dbContext.SaveChanges();
+        }
+
         public void Update(Vehicle vehicle)
         {
             _dbContext.Vehicles.Update(vehicle);

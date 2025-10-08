@@ -65,8 +65,8 @@ public class Program
         app.MapGet("/", () => Results.Json(new Home())).WithTags("Home");
         #endregion
 
-        #region Administrator endpoint
-        app.MapPost("/administrator/login", ([FromBody] LoginDTO loginDTO, IAdministratorService administrator) =>
+        #region Login endpoint
+        app.MapPost("/login", ([FromBody] LoginDTO loginDTO, IAdministratorService administrator) =>
             {
                 if (administrator.Login(loginDTO) != null)
                 {
@@ -76,8 +76,10 @@ public class Program
                 {
                     return Results.Unauthorized();
                 }
-            }).WithTags("Administrator");
+            }).WithTags("Login");
+        #endregion
 
+        #region Administrator endpoint
         app.MapPost("/administrator", ([FromBody] AdministratorDTO administratorDTO, IAdministratorService administratorService) =>
         {
             var validation = ValidateAdministratorDTO(administratorDTO);
@@ -133,6 +135,22 @@ public class Program
             vehicleService.Save(vehicle);
 
             return Results.Created($"/vehicle/{vehicle.Id}", vehicle);
+        }).WithTags("Vehicles");
+
+        app.MapPost("/vehicles", ([FromBody] List<VehicleDTO> vehicleDTOs, IVehicleService vehicleService) =>
+        {
+            var vehicles = new List<Vehicle>();
+            vehicleDTOs.ForEach(v =>
+            {
+                vehicles.Add(new Vehicle
+                {
+                    Name = v.Name,
+                    Brand = v.Brand,
+                    Year = v.Year
+                });
+            });
+            vehicleService.SaveAll(vehicles);
+            return Results.Created($"/vehicle", vehicles);
         }).WithTags("Vehicles");
 
         app.MapGet("/vehicle", ([FromQuery] int? page, IVehicleService vehicleService) =>

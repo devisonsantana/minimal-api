@@ -12,6 +12,7 @@ namespace minimal_api.Domain.Interfaces
         Vehicle? FindById(int id);
         void Delete(Vehicle vehicle);
         void Save(Vehicle vehicle);
+        void SaveAll(List<Vehicle> vehicles);
         void Update(Vehicle vehicle);
     }
 }
