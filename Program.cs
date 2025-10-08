@@ -42,9 +42,9 @@ public class Program
             if (string.IsNullOrEmpty(vehicleDTO.Brand))
                 validations.Messages.Add("Vehicle brand cannot be empty");
             if (vehicleDTO.Year < 1769)
-                validations.Messages.Add("Vehicle year cannot be too old, just above 1769");
+                validations.Messages.Add($"{vehicleDTO.Name}'s year cannot be too old, just above 1769");
             if (vehicleDTO.Year >= DateTime.Now.Year)
-                validations.Messages.Add("Vehicle year cannot be in the future");
+                validations.Messages.Add($"{vehicleDTO.Name}'s year cannot be in the future");
             return validations;
         }
         ErrorValidation ValidateAdministratorDTO(AdministratorDTO administratorDTO)
@@ -140,15 +140,21 @@ public class Program
         app.MapPost("/vehicles", ([FromBody] List<VehicleDTO> vehicleDTOs, IVehicleService vehicleService) =>
         {
             var vehicles = new List<Vehicle>();
-            vehicleDTOs.ForEach(v =>
+            foreach (var v in vehicleDTOs)
             {
+                var validation = ValidateVehicleDTO(v);
+                if (validation.Messages.Count > 0)
+                {
+                    return Results.BadRequest(validation);
+                }
                 vehicles.Add(new Vehicle
                 {
                     Name = v.Name,
                     Brand = v.Brand,
                     Year = v.Year
                 });
-            });
+            }
+
             vehicleService.SaveAll(vehicles);
             return Results.Created($"/vehicle", vehicles);
         }).WithTags("Vehicles");
