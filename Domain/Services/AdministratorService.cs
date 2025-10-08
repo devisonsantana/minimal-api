@@ -32,9 +32,9 @@ namespace minimal_api.Domain.Services
             }
         }
 
-        public Administrator FindById(int id)
+        public Administrator? FindById(int id)
         {
-            throw new NotImplementedException();
+            return _dbContext.Administrators.Where(a => a.Id == id).FirstOrDefault();
         }
 
         public Administrator? Login(LoginDTO loginDTO)

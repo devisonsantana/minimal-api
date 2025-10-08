@@ -93,7 +93,27 @@ public class Program
             return Results.Created($"/adm/{administrator.Id}", administrator);
         }).WithTags("Administrator");
 
-        app.MapGet("/administrators", () => { }).WithTags("Administrator");
+        app.MapGet("/administrator", ([FromQuery] int? page, IAdministratorService administratorService) =>
+        {
+            var adms = new List<AdministratorModelView>();
+            administratorService.FindAll(page).ForEach(adm =>
+            {
+                adms.Add(new AdministratorModelView
+                {
+                    Id = adm.Id,
+                    Email = adm.Email,
+                    Role = adm.Role
+                });
+            });
+            return Results.Ok(adms);
+        }).WithTags("Administrator");
+
+        app.MapGet("/administrator/{id}", ([FromRoute] int id, IAdministratorService administratorService) =>
+        {
+            var administrator = administratorService.FindById(id);
+            if (administrator == null) return Results.NotFound();
+            return Results.Ok(new AdministratorModelView { Id = administrator.Id, Email = administrator.Email, Role = administrator.Role });
+        }).WithTags("Administrator");
         #endregion
 
         #region Vehicle endpoint
