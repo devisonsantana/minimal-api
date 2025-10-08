@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using minimal_api.Domain.DTOs;
 using minimal_api.Domain.Entities;
+using minimal_api.Domain.Enums;
 using minimal_api.Domain.Interfaces;
 using minimal_api.Domain.ModelViews;
 using minimal_api.Domain.Services;
@@ -33,7 +34,7 @@ public class Program
         #endregion
 
         #region Validator
-        ErrorValidation ValidateDTO(VehicleDTO vehicleDTO)
+        ErrorValidation ValidateVehicleDTO(VehicleDTO vehicleDTO)
         {
             var validations = new ErrorValidation();
             if (string.IsNullOrEmpty(vehicleDTO.Name))
@@ -44,6 +45,18 @@ public class Program
                 validations.Messages.Add("Vehicle year cannot be too old, just above 1769");
             if (vehicleDTO.Year >= DateTime.Now.Year)
                 validations.Messages.Add("Vehicle year cannot be in the future");
+            return validations;
+        }
+        ErrorValidation ValidateAdministratorDTO(AdministratorDTO administratorDTO)
+        {
+            var validations = new ErrorValidation();
+            if (string.IsNullOrEmpty(administratorDTO.Email))
+                validations.Messages.Add("Email field cannot be empty");
+            if (string.IsNullOrEmpty(administratorDTO.Password))
+                validations.Messages.Add("Password field must be filled");
+            if (administratorDTO.Role == null)
+                validations.Messages.Add("Role field cannot be empty");
+
             return validations;
         }
         #endregion
@@ -63,13 +76,30 @@ public class Program
                 {
                     return Results.Unauthorized();
                 }
-            }).WithTags("Administrators");
+            }).WithTags("Administrator");
+
+        app.MapPost("/administrator", ([FromBody] AdministratorDTO administratorDTO, IAdministratorService administratorService) =>
+        {
+            var validation = ValidateAdministratorDTO(administratorDTO);
+            if (validation.Messages.Count > 0)
+                return Results.BadRequest(validation);
+            var administrator = new Administrator
+            {
+                Email = administratorDTO.Email,
+                Password = administratorDTO.Password,
+                Role = administratorDTO.Role.ToString() ?? Role.EDITOR.ToString()
+            };
+            administratorService.Save(administrator);
+            return Results.Created($"/adm/{administrator.Id}", administrator);
+        }).WithTags("Administrator");
+
+        app.MapGet("/administrators", () => { }).WithTags("Administrator");
         #endregion
 
         #region Vehicle endpoint
         app.MapPost("/vehicle", ([FromBody] VehicleDTO vehicleDTO, IVehicleService vehicleService) =>
         {
-            var validation = ValidateDTO(vehicleDTO);
+            var validation = ValidateVehicleDTO(vehicleDTO);
             if (validation.Messages.Count > 0)
                 return Results.BadRequest(validation);
 
@@ -105,7 +135,7 @@ public class Program
             var vehicle = vehicleService.FindById(id);
             if (vehicle == null) return Results.NotFound("Vehicle can't be updated because it doesn't exists on our database");
 
-            var validation = ValidateDTO(vehicleDTO);
+            var validation = ValidateVehicleDTO(vehicleDTO);
             if (validation.Messages.Count > 0)
                 return Results.BadRequest(validation);
 
