@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace minimal_api.Domain.Entities
 {
-    public class Administrator
+    public class User
     {
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]

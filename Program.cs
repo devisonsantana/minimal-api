@@ -46,7 +46,7 @@ public class Program
         });
         builder.Services.AddAuthorization();
 
-        builder.Services.AddScoped<IAdministratorService, AdministratorService>();
+        builder.Services.AddScoped<IUserService, UserService>();
         builder.Services.AddScoped<IVehicleService, VehicleService>();
 
         builder.Services.AddEndpointsApiExplorer();
@@ -88,26 +88,22 @@ public class Program
                 validations.Messages.Add($"{vehicleDTO.Name}'s year cannot be in the future");
             return validations;
         }
-        ErrorValidation ValidateAdministratorDTO(AdministratorDTO administratorDTO)
+        ErrorValidation ValidateAdministratorDTO(UserDTO userDTO)
         {
             var validations = new ErrorValidation();
-            if (string.IsNullOrEmpty(administratorDTO.Email))
+            if (string.IsNullOrEmpty(userDTO.Email))
                 validations.Messages.Add("Email field cannot be empty");
-            if (string.IsNullOrEmpty(administratorDTO.Password))
+            if (string.IsNullOrEmpty(userDTO.Password))
                 validations.Messages.Add("Password field must be filled");
-            if (administratorDTO.Role == null)
+            if (userDTO.Role == null)
                 validations.Messages.Add("Role field cannot be empty");
 
             return validations;
         }
         #endregion
 
-        #region Home endpoint
-        app.MapGet("/", () => Results.Json(new Home())).WithTags("Home");
-        #endregion
-
-        #region Login endpoint
-        string GenerateTokenJWT(Administrator administrator)
+        #region Token Generator
+        string GenerateTokenJWT(User user)
         {
             var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key));
             var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
@@ -115,8 +111,8 @@ public class Program
             {
                 // new Claim(ClaimTypes.Email, administrator.Email),
                 // new Claim(ClaimTypes.Role, administrator.Role)
-                new Claim("email", administrator.Email),
-                new Claim("role", administrator.Role)
+                new Claim("email", user.Email),
+                new Claim("role", user.Role)
             };
             var token = new JwtSecurityToken(
                 expires: DateTime.Now.AddHours(3),
@@ -125,10 +121,31 @@ public class Program
             );
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
+        #endregion
 
-        app.MapPost("/login", ([FromBody] LoginDTO loginDTO, IAdministratorService administrator) =>
+        #region Home endpoint
+        app.MapGet("/", () => Results.Json(new Home())).WithTags("Home");
+        #endregion
+
+        #region Sign-up and Sign-in endpoint
+        app.MapPost("/signup", ([FromBody] UserDTO userDTO, IUserService service) =>
+                {
+                    var validation = ValidateAdministratorDTO(userDTO);
+                    if (validation.Messages.Count > 0)
+                        return Results.BadRequest(validation);
+                    var user = new User
+                    {
+                        Email = userDTO.Email,
+                        Password = userDTO.Password,
+                        Role = userDTO.Role.ToString() ?? Role.EDITOR.ToString()
+                    };
+                    service.Save(user);
+                    return Results.Created($"/user/{user.Id}", user);
+                }).WithTags("Signup/Login").AllowAnonymous();
+
+        app.MapPost("/login", ([FromBody] LoginDTO loginDTO, IUserService service) =>
             {
-                var adm = administrator.Login(loginDTO);
+                var adm = service.Login(loginDTO);
                 if (adm != null)
                 {
                     var token = GenerateTokenJWT(adm);
@@ -140,46 +157,31 @@ public class Program
                     });
                 }
                 return Results.Unauthorized();
-            }).WithTags("Login").AllowAnonymous();
+            }).WithTags("Signup/Login").AllowAnonymous();
         #endregion
 
-        #region Administrator endpoint
-        app.MapPost("/administrator", ([FromBody] AdministratorDTO administratorDTO, IAdministratorService administratorService) =>
+        #region User endpoint
+        app.MapGet("/user", ([FromQuery] int? page, IUserService service) =>
         {
-            var validation = ValidateAdministratorDTO(administratorDTO);
-            if (validation.Messages.Count > 0)
-                return Results.BadRequest(validation);
-            var administrator = new Administrator
+            var users = new List<UserModelView>();
+            service.FindAll(page).ForEach(adm =>
             {
-                Email = administratorDTO.Email,
-                Password = administratorDTO.Password,
-                Role = administratorDTO.Role.ToString() ?? Role.EDITOR.ToString()
-            };
-            administratorService.Save(administrator);
-            return Results.Created($"/adm/{administrator.Id}", administrator);
-        }).WithTags("Administrator");
-
-        app.MapGet("/administrator", ([FromQuery] int? page, IAdministratorService administratorService) =>
-        {
-            var adms = new List<AdministratorModelView>();
-            administratorService.FindAll(page).ForEach(adm =>
-            {
-                adms.Add(new AdministratorModelView
+                users.Add(new UserModelView
                 {
                     Id = adm.Id,
                     Email = adm.Email,
                     Role = adm.Role
                 });
             });
-            return Results.Ok(adms);
-        }).WithTags("Administrator").RequireAuthorization();
+            return Results.Ok(users);
+        }).WithTags("User").RequireAuthorization();
 
-        app.MapGet("/administrator/{id}", ([FromRoute] int id, IAdministratorService administratorService) =>
+        app.MapGet("/user/{id}", ([FromRoute] int id, IUserService service) =>
         {
-            var administrator = administratorService.FindById(id);
-            if (administrator == null) return Results.NotFound();
-            return Results.Ok(new AdministratorModelView { Id = administrator.Id, Email = administrator.Email, Role = administrator.Role });
-        }).WithTags("Administrator").RequireAuthorization();
+            var usr = service.FindById(id);
+            if (usr == null) return Results.NotFound();
+            return Results.Ok(new UserModelView { Id = usr.Id, Email = usr.Email, Role = usr.Role });
+        }).WithTags("User").RequireAuthorization();
         #endregion
 
         #region Vehicle endpoint

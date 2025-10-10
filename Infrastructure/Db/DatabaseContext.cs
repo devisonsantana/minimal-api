@@ -1,16 +1,13 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using minimal_api.Domain.Entities;
+using minimal_api.Domain.Enums;
 
 namespace minimal_api.Infrastructure.Db
 {
     public class DatabaseContext : DbContext
     {
         private readonly IConfiguration _configurationAppSettings;
-        public DbSet<Administrator> Administrators { get; set; } = default;
+        public DbSet<User> Users { get; set; } = default;
         public DbSet<Vehicle> Vehicles { get; set; } = default;
         public DatabaseContext(IConfiguration configurationAppSettings)
         {
@@ -29,13 +26,13 @@ namespace minimal_api.Infrastructure.Db
         }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            modelBuilder.Entity<Administrator>().HasData(
-                new Administrator
+            modelBuilder.Entity<User>().HasData(
+                new User
                 {
                     Id = 1,
-                    Email = "dev@tester.com",
+                    Email = "admin@api.com",
                     Password = "123456789",
-                    Role = "ADM"
+                    Role = Role.ADMIN.ToString()
                 }
             );
         }

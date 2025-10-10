@@ -10,8 +10,8 @@ using minimal_api.Infrastructure.Db;
 namespace minimal_api.Migrations
 {
     [DbContext(typeof(DatabaseContext))]
-    [Migration("20250929052356_SeedAdministrator")]
-    partial class SeedAdministrator
+    [Migration("20251010063841_UserEntityRenameAndResetSchema")]
+    partial class UserEntityRenameAndResetSchema
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -21,7 +21,7 @@ namespace minimal_api.Migrations
                 .HasAnnotation("ProductVersion", "8.0.19")
                 .HasAnnotation("Relational:MaxIdentifierLength", 64);
 
-            modelBuilder.Entity("minimal_api.Domain.Entities.Administrator", b =>
+            modelBuilder.Entity("minimal_api.Domain.Entities.User", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -44,16 +44,40 @@ namespace minimal_api.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Administrators");
+                    b.ToTable("Users");
 
                     b.HasData(
                         new
                         {
                             Id = 1,
-                            Email = "dev@tester.com",
+                            Email = "admin@api.com",
                             Password = "123456789",
-                            Role = "ADM"
+                            Role = "ADMIN"
                         });
+                });
+
+            modelBuilder.Entity("minimal_api.Domain.Entities.Vehicle", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    b.Property<string>("Brand")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("varchar(255)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(155)
+                        .HasColumnType("varchar(155)");
+
+                    b.Property<int>("Year")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Vehicles");
                 });
 #pragma warning restore 612, 618
         }

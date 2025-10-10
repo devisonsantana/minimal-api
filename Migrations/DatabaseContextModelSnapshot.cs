@@ -18,7 +18,7 @@ namespace minimal_api.Migrations
                 .HasAnnotation("ProductVersion", "8.0.19")
                 .HasAnnotation("Relational:MaxIdentifierLength", 64);
 
-            modelBuilder.Entity("minimal_api.Domain.Entities.Administrator", b =>
+            modelBuilder.Entity("minimal_api.Domain.Entities.User", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -41,15 +41,15 @@ namespace minimal_api.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Administrators");
+                    b.ToTable("Users");
 
                     b.HasData(
                         new
                         {
                             Id = 1,
-                            Email = "dev@tester.com",
+                            Email = "admin@api.com",
                             Password = "123456789",
-                            Role = "ADM"
+                            Role = "ADMIN"
                         });
                 });
 

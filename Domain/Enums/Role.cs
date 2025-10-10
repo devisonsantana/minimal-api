@@ -2,6 +2,6 @@ namespace minimal_api.Domain.Enums
 {
     public enum Role
     {
-        ADM, EDITOR
+        ADMIN, EDITOR
     }
 }
