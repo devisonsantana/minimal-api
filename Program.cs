@@ -39,7 +39,9 @@ public class Program
             option.TokenValidationParameters = new TokenValidationParameters
             {
                 ValidateLifetime = true,
-                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key))
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key)),
+                ValidateIssuer = false,
+                ValidateAudience = false
             };
         });
         builder.Services.AddAuthorization();
@@ -57,7 +59,7 @@ public class Program
                 Scheme = "bearer",
                 BearerFormat = "JWT",
                 In = ParameterLocation.Header,
-                Description = "Insert a JWT token\n(ex.: Bearer <your_token>)"
+                Description = "Insert a JWT token (ex: <your_jwt_token>)"
             });
             options.OperationFilter<AuthenticationFilter>();
         });
