@@ -5,9 +5,11 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using minimal_api.Domain.DTOs;
 using minimal_api.Domain.Entities;
 using minimal_api.Domain.Enums;
+using minimal_api.Domain.Filters;
 using minimal_api.Domain.Interfaces;
 using minimal_api.Domain.ModelViews;
 using minimal_api.Domain.Services;
@@ -46,7 +48,19 @@ public class Program
         builder.Services.AddScoped<IVehicleService, VehicleService>();
 
         builder.Services.AddEndpointsApiExplorer();
-        builder.Services.AddSwaggerGen();
+        builder.Services.AddSwaggerGen(options =>
+        {
+            options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+            {
+                Name = "Authorization",
+                Type = SecuritySchemeType.Http,
+                Scheme = "bearer",
+                BearerFormat = "JWT",
+                In = ParameterLocation.Header,
+                Description = "Insert a JWT token\n(ex.: Bearer <your_token>)"
+            });
+            options.OperationFilter<AuthenticationFilter>();
+        });
 
         builder.Services.AddDbContext<DatabaseContext>(options =>
         {
@@ -124,7 +138,7 @@ public class Program
                     });
                 }
                 return Results.Unauthorized();
-            }).WithTags("Login");
+            }).WithTags("Login").AllowAnonymous();
         #endregion
 
         #region Administrator endpoint
