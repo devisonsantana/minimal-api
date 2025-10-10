@@ -88,7 +88,8 @@ public class Program
                 validations.Messages.Add($"{vehicleDTO.Name}'s year cannot be in the future");
             return validations;
         }
-        ErrorValidation ValidateAdministratorDTO(UserDTO userDTO)
+        
+        ErrorValidation ValidateUserDTO(UserDTO userDTO)
         {
             var validations = new ErrorValidation();
             if (string.IsNullOrEmpty(userDTO.Email))
@@ -130,7 +131,7 @@ public class Program
         #region Sign-up and Sign-in endpoint
         app.MapPost("/signup", ([FromBody] UserDTO userDTO, IUserService service) =>
                 {
-                    var validation = ValidateAdministratorDTO(userDTO);
+                    var validation = ValidateUserDTO(userDTO);
                     if (validation.Messages.Count > 0)
                         return Results.BadRequest(validation);
                     var user = new User
