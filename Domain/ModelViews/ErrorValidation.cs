@@ -7,6 +7,6 @@ namespace minimal_api.Domain.ModelViews
 {
     public class ErrorValidation
     {
-        public List<string> Messages { get; set; } = new List<string>();
+        public List<string> Messages { get; set; } = [];
     }
 }

@@ -17,10 +17,9 @@ namespace minimal_api.Domain.Filters
 
             if (hasAuthorize)
             {
-                operation.Security = new List<OpenApiSecurityRequirement>
-                {
-                    new OpenApiSecurityRequirement
-                    {
+                operation.Security =
+                [
+                    new() {
                         {
                             new OpenApiSecurityScheme
                             {
@@ -32,7 +31,7 @@ namespace minimal_api.Domain.Filters
                             }, new string[] { }
                         }
                     }
-                };
+                ];
             }
         }
     }
