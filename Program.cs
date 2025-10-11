@@ -1,11 +1,14 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Any;
+using Microsoft.OpenApi.MicrosoftExtensions;
 using Microsoft.OpenApi.Models;
 using minimal_api.Domain.DTOs;
 using minimal_api.Domain.Entities;
@@ -54,6 +57,17 @@ public class Program
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddSwaggerGen(options =>
         {
+            options.SwaggerDoc("v1", new OpenApiInfo
+            {
+                Title = "Vehicle Management API",
+                Version = "v1",
+                Description = "API for managing users and vehicles with JWT authentication",
+                Contact = new OpenApiContact
+                {
+                    Name = "Devison Santana",
+                    Email = "dev.devisonsan@hotmail.com"
+                }
+            });
             options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
             {
                 Name = "Authorization",
@@ -64,6 +78,8 @@ public class Program
                 Description = "Insert a JWT token (ex: <your_jwt_token>)"
             });
             options.OperationFilter<AuthenticationFilter>();
+            // options.UseAllOfToExtendReferenceSchemas();
+            // options.SchemaGeneratorOptions.UseInlineDefinitionsForEnums = true;
         });
 
         builder.Services.AddDbContext<DatabaseContext>(options =>
@@ -73,6 +89,12 @@ public class Program
                 ServerVersion.AutoDetect(builder.Configuration.GetConnectionString("mysql"))
             );
         });
+
+        builder.Services.ConfigureHttpJsonOptions(options =>
+        {
+            options.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
+        });
+
         var app = builder.Build();
         #endregion
 
@@ -144,7 +166,29 @@ public class Program
                 };
                 service.Save(user);
                 return Results.Created($"/user/{user.Id}", user);
-            }).WithTags("Signup/Login").AllowAnonymous();
+            }).WithOpenApi(operation => new OpenApiOperation
+            {
+                Summary = "Register a new user",
+                Description = "Creates a new user with the specified role (ADMIN or EDITOR)",
+                Tags = [new OpenApiTag { Name = "Signup/Login" }],
+                RequestBody = new OpenApiRequestBody
+                {
+                    Description = "User data to create new account",
+                    Content = new Dictionary<string, OpenApiMediaType>
+                    {
+                        ["application/json"] = new OpenApiMediaType
+                        {
+                            Example = new OpenApiObject
+                            {
+                                ["email"] = new OpenApiString("jonhdoe@example.com"),
+                                ["password"] = new OpenApiString("your-password"),
+                                ["role"] = new OpenApiString("EDITOR")
+                            }
+                        }
+                    }
+                }
+            })
+            .AllowAnonymous();
 
         app.MapPost("/login", ([FromBody] LoginDTO loginDTO, IUserService service) =>
             {
@@ -177,7 +221,48 @@ public class Program
                 });
             });
             return Results.Ok(users);
-        }).WithTags("User")
+        }).WithOpenApi(operation => new OpenApiOperation
+        {
+            Summary = "List all users created",
+            Description = "Returns a paginated list of users. Access restricted to administrators only",
+            Tags = [new OpenApiTag { Name = "User" }],
+            Parameters =
+            [
+                new()
+                {
+                    Name = "page",
+                    In = ParameterLocation.Query,
+                    Description= "Number of the page (opcional, default = 1)",
+                    Required = false,
+                    Schema = new OpenApiSchema { Type = "integer", Default = new OpenApiInteger(1) }
+                }
+            ],
+            Responses = new OpenApiResponses
+            {
+                ["200"] = new OpenApiResponse
+                {
+                    Description = "List of users successfully retrieved",
+                    Content = new Dictionary<string, OpenApiMediaType>
+                    {
+                        ["application/json"] = new OpenApiMediaType
+                        {
+                            Example = new OpenApiArray
+                            {
+                                new OpenApiObject
+                                {
+                                    ["id"] = new OpenApiInteger(1),
+                                    ["email"] = new OpenApiString("admin@example.com"),
+                                }
+                            }
+                        }
+                    }
+                },
+                ["401"] = new OpenApiResponse
+                { Description = "Unauthorized - JWT token missing or invalid" },
+                ["403"] = new OpenApiResponse
+                { Description = "Forbidden - User does not have ADMIN role" }
+            }
+        })
         .RequireAuthorization(new AuthorizeAttribute { Roles = nameof(Role.ADMIN) });
 
         app.MapGet("/user/{id}", ([FromRoute] int id, IUserService service) =>
