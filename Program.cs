@@ -2,6 +2,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -41,7 +42,8 @@ public class Program
                 ValidateLifetime = true,
                 IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key)),
                 ValidateIssuer = false,
-                ValidateAudience = false
+                ValidateAudience = false,
+                RoleClaimType = ClaimTypes.Role
             };
         });
         builder.Services.AddAuthorization();
@@ -88,7 +90,7 @@ public class Program
                 validations.Messages.Add($"{vehicleDTO.Name}'s year cannot be in the future");
             return validations;
         }
-        
+
         ErrorValidation ValidateUserDTO(UserDTO userDTO)
         {
             var validations = new ErrorValidation();
@@ -110,10 +112,10 @@ public class Program
             var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
             var claims = new List<Claim>()
             {
-                // new Claim(ClaimTypes.Email, administrator.Email),
-                // new Claim(ClaimTypes.Role, administrator.Role)
-                new Claim("email", user.Email),
-                new Claim("role", user.Role)
+                new(ClaimTypes.Email, user.Email),
+                new(ClaimTypes.Role, user.Role)
+                // new Claim("email", user.Email),
+                // new Claim("role", user.Role)
             };
             var token = new JwtSecurityToken(
                 expires: DateTime.Now.AddHours(3),
@@ -130,19 +132,19 @@ public class Program
 
         #region Sign-up and Sign-in endpoint
         app.MapPost("/signup", ([FromBody] UserDTO userDTO, IUserService service) =>
+            {
+                var validation = ValidateUserDTO(userDTO);
+                if (validation.Messages.Count > 0)
+                    return Results.BadRequest(validation);
+                var user = new User
                 {
-                    var validation = ValidateUserDTO(userDTO);
-                    if (validation.Messages.Count > 0)
-                        return Results.BadRequest(validation);
-                    var user = new User
-                    {
-                        Email = userDTO.Email,
-                        Password = userDTO.Password,
-                        Role = userDTO.Role.ToString() ?? Role.EDITOR.ToString()
-                    };
-                    service.Save(user);
-                    return Results.Created($"/user/{user.Id}", user);
-                }).WithTags("Signup/Login").AllowAnonymous();
+                    Email = userDTO.Email,
+                    Password = userDTO.Password,
+                    Role = userDTO.Role.ToString() ?? Role.EDITOR.ToString()
+                };
+                service.Save(user);
+                return Results.Created($"/user/{user.Id}", user);
+            }).WithTags("Signup/Login").AllowAnonymous();
 
         app.MapPost("/login", ([FromBody] LoginDTO loginDTO, IUserService service) =>
             {
@@ -165,24 +167,26 @@ public class Program
         app.MapGet("/user", ([FromQuery] int? page, IUserService service) =>
         {
             var users = new List<UserModelView>();
-            service.FindAll(page).ForEach(adm =>
+            service.FindAll(page ??= 1).ForEach(usr =>
             {
                 users.Add(new UserModelView
                 {
-                    Id = adm.Id,
-                    Email = adm.Email,
-                    Role = adm.Role
+                    Id = usr.Id,
+                    Email = usr.Email,
+                    Role = usr.Role
                 });
             });
             return Results.Ok(users);
-        }).WithTags("User").RequireAuthorization();
+        }).WithTags("User")
+        .RequireAuthorization(new AuthorizeAttribute { Roles = nameof(Role.ADMIN) });
 
         app.MapGet("/user/{id}", ([FromRoute] int id, IUserService service) =>
         {
             var usr = service.FindById(id);
             if (usr == null) return Results.NotFound();
             return Results.Ok(new UserModelView { Id = usr.Id, Email = usr.Email, Role = usr.Role });
-        }).WithTags("User").RequireAuthorization();
+        }).WithTags("User")
+        .RequireAuthorization(new AuthorizeAttribute { Roles = nameof(Role.ADMIN) });
         #endregion
 
         #region Vehicle endpoint
@@ -202,7 +206,8 @@ public class Program
             vehicleService.Save(vehicle);
 
             return Results.Created($"/vehicle/{vehicle.Id}", vehicle);
-        }).WithTags("Vehicles").RequireAuthorization();
+        }).WithTags("Vehicles")
+        .RequireAuthorization(new AuthorizeAttribute { Roles = $"{nameof(Role.ADMIN)},{nameof(Role.EDITOR)}" });
 
         app.MapPost("/vehicles", ([FromBody] List<VehicleDTO> vehicleDTOs, IVehicleService vehicleService) =>
         {
@@ -224,14 +229,16 @@ public class Program
 
             vehicleService.SaveAll(vehicles);
             return Results.Created($"/vehicle", vehicles);
-        }).WithTags("Vehicles").RequireAuthorization();
+        }).WithTags("Vehicles")
+        .RequireAuthorization(new AuthorizeAttribute { Roles = nameof(Role.ADMIN) });
 
-        app.MapGet("/vehicle", ([FromQuery] int? page, IVehicleService vehicleService) =>
+        app.MapGet("/vehicle", ([FromQuery] int? page, [FromQuery] string? name, [FromQuery] string? brand, IVehicleService service) =>
         {
-            var vehicles = vehicleService.FindAll(page);
+            var vehicles = service.FindAll(page: page ??= 1, name: name, brand: brand);
 
             return Results.Ok<List<Vehicle>>(vehicles);
-        }).WithTags("Vehicles").RequireAuthorization();
+        }).WithTags("Vehicles")
+        .RequireAuthorization(new AuthorizeAttribute { Roles = $"{nameof(Role.ADMIN)},{nameof(Role.EDITOR)}" });
 
         app.MapGet("/vehicle/{id}", ([FromRoute] int id, IVehicleService vehicleService) =>
         {
@@ -239,7 +246,8 @@ public class Program
             if (vehicle != null) return Results.Ok(vehicle);
 
             return Results.NotFound();
-        }).WithTags("Vehicles").RequireAuthorization();
+        }).WithTags("Vehicles")
+        .RequireAuthorization(new AuthorizeAttribute { Roles = $"{nameof(Role.ADMIN)},{nameof(Role.EDITOR)}" });
 
         app.MapPut("/vehicle/{id}", ([FromRoute] int id, VehicleDTO vehicleDTO, IVehicleService vehicleService) =>
         {
@@ -256,7 +264,8 @@ public class Program
             vehicleService.Update(vehicle);
 
             return Results.NoContent();
-        }).WithTags("Vehicles").RequireAuthorization();
+        }).WithTags("Vehicles")
+        .RequireAuthorization(new AuthorizeAttribute { Roles = nameof(Role.ADMIN) });
 
         app.MapDelete("/vehicle/{id}", ([FromRoute] int id, IVehicleService vehicleService) =>
         {
@@ -264,7 +273,8 @@ public class Program
             if (vehicle == null) return Results.NotFound("Vehicle can't be deleted because it doesn't exists on our database");
             vehicleService.Delete(vehicle);
             return Results.NoContent();
-        }).WithTags("Vehicles").RequireAuthorization();
+        }).WithTags("Vehicles")
+        .RequireAuthorization(new AuthorizeAttribute { Roles = nameof(Role.ADMIN) });
         #endregion
 
         #region Using Swagger and SwaggerIU

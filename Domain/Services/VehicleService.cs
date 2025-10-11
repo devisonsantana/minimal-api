@@ -24,22 +24,19 @@ namespace minimal_api.Domain.Services
             _dbContext.SaveChanges();
         }
 
-        public List<Vehicle> FindAll(int? page = 1, string? name = null, string? brand = null)
+        public List<Vehicle> FindAll(int page, string? name = null, string? brand = null)
         {
             var query = _dbContext.Vehicles.AsQueryable();
-            if (!string.IsNullOrEmpty(name))
-            {
-                query = query.Where(v => EF.Functions.Like(v.Name.ToLower(), $"%{name}%"));
-            }
+            
+            if (!string.IsNullOrWhiteSpace(name))
+                query = query.Where(v => EF.Functions.Like(v.Name.ToLower(), $"%{name.ToLower()}%"));
+
+            if (!string.IsNullOrWhiteSpace(brand))
+                query = query.Where(v => EF.Functions.Like(v.Brand.ToLower(), $"%{brand.ToLower()}%"));
+
             int itemsPerPage = 10;
-            if (page != null)
-            {
-                return query.Skip(((int)page - 1) * itemsPerPage).Take(itemsPerPage).ToList();
-            }
-            else
-            {
-                return query.Skip((1 - 1) * itemsPerPage).Take(itemsPerPage).ToList();
-            }
+             
+            return [.. query.Skip(((int)page - 1) * itemsPerPage).Take(itemsPerPage)];
         }
 
         public Vehicle? FindById(int id)

@@ -13,12 +13,11 @@ namespace minimal_api.Domain.Services
             _dbContext = dbContext;
         }
 
-        public List<User> FindAll(int? page = 1)
+        public List<User> FindAll(int page)
         {
             var query = _dbContext.Users.AsQueryable();
             int itemsPerPage = 10;
-            page ??= 1;
-            return query.Skip(((int)page - 1) * itemsPerPage).Take(itemsPerPage).ToList();
+            return [.. query.Skip(((int)page - 1) * itemsPerPage).Take(itemsPerPage)];
         }
 
         public User? FindById(int id)

@@ -8,6 +8,6 @@ namespace minimal_api.Domain.Interfaces
         User? Login(LoginDTO loginDTO);
         User Save(User administrator);
         User? FindById(int id);
-        List<User> FindAll(int? page = 1);
+        List<User> FindAll(int page);
     }
 }
