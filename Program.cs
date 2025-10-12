@@ -224,7 +224,7 @@ public class Program
         }).WithOpenApi(operation => new OpenApiOperation
         {
             Summary = "List all users created",
-            Description = "Returns a paginated list of users. Access restricted to administrators only",
+            Description = "Returns a paginated list of users. Access is restricted to users with the ADMIN role.",
             Tags = [new OpenApiTag { Name = "User" }],
             Parameters =
             [
@@ -251,14 +251,15 @@ public class Program
                                 new OpenApiObject
                                 {
                                     ["id"] = new OpenApiInteger(1),
-                                    ["email"] = new OpenApiString("admin@example.com"),
+                                    ["email"] = new OpenApiString("jonhdoe@example.com"),
+                                    ["role"] = new OpenApiString("EDITOR")
                                 }
                             }
                         }
                     }
                 },
                 ["401"] = new OpenApiResponse
-                { Description = "Unauthorized - JWT token missing or invalid" },
+                { Description = "Unauthorized - Missing or invalid JWT token" },
                 ["403"] = new OpenApiResponse
                 { Description = "Forbidden - User does not have ADMIN role" }
             }
@@ -268,9 +269,60 @@ public class Program
         app.MapGet("/user/{id}", ([FromRoute] int id, IUserService service) =>
         {
             var usr = service.FindById(id);
-            if (usr == null) return Results.NotFound();
+            if (usr == null) return Results.NotFound(new { message = $"Not Found - User with ID {id} not found." });
             return Results.Ok(new UserModelView { Id = usr.Id, Email = usr.Email, Role = usr.Role });
-        }).WithTags("User")
+        }).WithOpenApi(operation => new OpenApiOperation
+        {
+            Summary = "Get user by ID",
+            Description = "Retrieves a single user by their unique identifier. Access is restricted to users with the ADMIN role.",
+            Tags = [new OpenApiTag { Name = "User" }],
+            Parameters =
+            [
+                new()
+                {
+                    Name = "id",
+                    In = ParameterLocation.Path,
+                    Description= "Unique identifier of the user to retrieve",
+                    Required = true,
+                    Schema = new OpenApiSchema { Type = "integer", Default = new OpenApiInteger(1) }
+                }
+            ],
+            Responses = new OpenApiResponses
+            {
+                ["200"] = new OpenApiResponse
+                {
+                    Description = "User successfully retrieved",
+                    Content = new Dictionary<string, OpenApiMediaType>
+                    {
+                        ["application/json"] = new OpenApiMediaType
+                        {
+                            Example = new OpenApiObject
+                            {
+                                ["id"] = new OpenApiInteger(1),
+                                ["email"] = new OpenApiString("jonhdoe@example.com"),
+                                ["role"] = new OpenApiString("EDITOR")
+                            }
+                        }
+                    }
+                },
+                ["404"] = new OpenApiResponse
+                {
+                    Description = "User not found",
+                    Content = new Dictionary<string, OpenApiMediaType>
+                    {
+                        ["application/json"] = new OpenApiMediaType
+                        {
+                            Example = new OpenApiObject
+                            {
+                                ["message"] = new OpenApiString("Not Found - User with ID 99 not found.")
+                            }
+                        }
+                    }
+                },
+                ["401"] = new OpenApiResponse { Description = "Unauthorized - Missing or invalid JWT token" },
+                ["403"] = new OpenApiResponse { Description = "Forbidden - User does not have ADMIN role" }
+            }
+        })
         .RequireAuthorization(new AuthorizeAttribute { Roles = nameof(Role.ADMIN) });
         #endregion
 
