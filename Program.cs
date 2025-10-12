@@ -120,11 +120,11 @@ public class Program
                 validations.Messages.Add("Email field cannot be empty");
             if (string.IsNullOrEmpty(userDTO.Password))
                 validations.Messages.Add("Password field must be filled");
-            if(Enum.TryParse<Role>(userDTO.Role.ToString(), out Role roleParsed))
+            if (Enum.TryParse<Role>(userDTO.Role.ToString(), out Role roleParsed))
             {
                 if ((roleParsed != Role.EDITOR) && (roleParsed != Role.ADMIN))
                 {
-                    validations.Messages.Add($"Role '{roleParsed}' is invalid. Must be ADMIN or EDITOR");
+                    validations.Messages.Add($"Invalid role '{roleParsed}'. Role must be 'ADMIN' or 'EDITOR'");
                 }
             }
             return validations;
@@ -162,7 +162,7 @@ public class Program
                 var validation = ValidateUserDTO(userDTO);
                 if (validation.Messages.Count > 0)
                     return Results.BadRequest(validation);
-                
+
                 var user = new User
                 {
                     Email = userDTO.Email,
@@ -183,11 +183,68 @@ public class Program
                     {
                         ["application/json"] = new OpenApiMediaType
                         {
+                            Schema = new OpenApiSchema
+                            {
+                                Type = "object",
+                                Properties = new Dictionary<string, OpenApiSchema>
+                                {
+                                    ["email"] = new OpenApiSchema { Type = "string", Format = "email" },
+                                    ["password"] = new OpenApiSchema { Type = "string", Format = "password" },
+                                    ["role"] = new OpenApiSchema
+                                    {
+                                        Type = "string",
+                                        Enum = new List<IOpenApiAny>
+                                        {
+                                            new OpenApiString("ADMIN"),
+                                            new OpenApiString("EDITOR")
+                                        }
+                                    }
+                                },
+                                Required = new HashSet<string> { "email", "password", "role" }
+                            },
                             Example = new OpenApiObject
                             {
                                 ["email"] = new OpenApiString("jonhdoe@example.com"),
                                 ["password"] = new OpenApiString("your-password"),
                                 ["role"] = new OpenApiString("EDITOR")
+                            }
+                        }
+                    }
+                },
+                Responses = new OpenApiResponses
+                {
+                    ["201"] = new OpenApiResponse
+                    {
+                        Description = "User created successfully",
+                        Content = new Dictionary<string, OpenApiMediaType>
+                        {
+                            ["application/json"] = new OpenApiMediaType
+                            {
+                                Example = new OpenApiObject
+                                {
+                                    ["id"] = new OpenApiInteger(1),
+                                    ["email"] = new OpenApiString("jonhdoe@example.com"),
+                                    ["role"] = new OpenApiString("EDITOR")
+                                }
+                            }
+                        }
+                    },
+                    ["400"] = new OpenApiResponse
+                    {
+                        Description = "Invalid Request",
+                        Content = new Dictionary<string, OpenApiMediaType>
+                        {
+                            ["application/json"] = new OpenApiMediaType
+                            {
+                                Example = new OpenApiObject
+                                {
+                                    ["messages"] = new OpenApiArray
+                                    {
+                                        new OpenApiString("Email field cannot be empty"),
+                                        new OpenApiString("Password field cannot be empty"),
+                                        new OpenApiString("Invalid role 'USER'. Role must be 'ADMIN' or 'EDITOR'")
+                                    }
+                                }
                             }
                         }
                     }
@@ -197,14 +254,14 @@ public class Program
 
         app.MapPost("/login", ([FromBody] LoginDTO loginDTO, IUserService service) =>
             {
-                var adm = service.Login(loginDTO);
-                if (adm != null)
+                var usr = service.Login(loginDTO);
+                if (usr != null)
                 {
-                    var token = GenerateTokenJWT(adm);
+                    var token = GenerateTokenJWT(usr);
                     return Results.Ok(new UserSignedModelView
                     {
-                        Email = adm.Email,
-                        Role = adm.Role,
+                        Email = usr.Email,
+                        Role = usr.Role,
                         Token = token
                     });
                 }
