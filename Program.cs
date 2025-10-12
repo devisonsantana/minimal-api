@@ -120,9 +120,13 @@ public class Program
                 validations.Messages.Add("Email field cannot be empty");
             if (string.IsNullOrEmpty(userDTO.Password))
                 validations.Messages.Add("Password field must be filled");
-            if (userDTO.Role == null)
-                validations.Messages.Add("Role field cannot be empty");
-
+            if(Enum.TryParse<Role>(userDTO.Role.ToString(), out Role roleParsed))
+            {
+                if ((roleParsed != Role.EDITOR) && (roleParsed != Role.ADMIN))
+                {
+                    validations.Messages.Add($"Role '{roleParsed}' is invalid. Must be ADMIN or EDITOR");
+                }
+            }
             return validations;
         }
         #endregion
@@ -158,13 +162,14 @@ public class Program
                 var validation = ValidateUserDTO(userDTO);
                 if (validation.Messages.Count > 0)
                     return Results.BadRequest(validation);
+                
                 var user = new User
                 {
                     Email = userDTO.Email,
                     Password = userDTO.Password,
-                    Role = userDTO.Role.ToString() ?? Role.EDITOR.ToString()
+                    Role = userDTO.Role.ToString()
                 };
-                service.Save(user);
+                // service.Save(user);
                 return Results.Created($"/user/{user.Id}", user);
             }).WithOpenApi(operation => new OpenApiOperation
             {
