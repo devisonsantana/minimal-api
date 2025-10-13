@@ -50,7 +50,26 @@ namespace minimal_api.Domain.Exceptions
                             ["errors"] = ex.Errors
                         }
                     },
-                    Exception=ex
+                    Exception = ex
+                });
+            }
+            catch (InvalidPageNumberException ex)
+            {
+                context.Response.StatusCode = StatusCodes.Status400BadRequest;
+                await problemDetailsService.WriteAsync(new ProblemDetailsContext
+                {
+                    HttpContext = context,
+                    ProblemDetails =
+                    {
+                        Title = "Invalid parameter",
+                        Detail = ex.Message,
+                        Status = 400,
+                        Extensions =
+                        {
+                            ["providedValue"] = ex.ProvidedValue
+                        }
+                    },
+                    Exception = ex
                 });
             }
             catch (JsonException ex)

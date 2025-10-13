@@ -1,5 +1,6 @@
 using minimal_api.Domain.DTOs;
 using minimal_api.Domain.Entities;
+using minimal_api.Domain.Exceptions;
 using minimal_api.Domain.Interfaces;
 using minimal_api.Infrastructure.Db;
 
@@ -15,6 +16,7 @@ namespace minimal_api.Domain.Services
 
         public List<User> FindAll(int page)
         {
+            if (page <= 0) throw new InvalidPageNumberException(page, $"The value for 'page' must be positive.");
             var query = _dbContext.Users.AsQueryable();
             int itemsPerPage = 10;
             return [.. query.Skip(((int)page - 1) * itemsPerPage).Take(itemsPerPage)];

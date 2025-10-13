@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using minimal_api.Domain.Entities;
+using minimal_api.Domain.Exceptions;
 using minimal_api.Domain.Interfaces;
 using minimal_api.Infrastructure.Db;
 
@@ -26,6 +27,7 @@ namespace minimal_api.Domain.Services
 
         public List<Vehicle> FindAll(int page, string? name = null, string? brand = null)
         {
+            if (page <= 0) throw new InvalidPageNumberException(page, "The value for 'page' must be positive.");
             var query = _dbContext.Vehicles.AsQueryable();
             
             if (!string.IsNullOrWhiteSpace(name))
