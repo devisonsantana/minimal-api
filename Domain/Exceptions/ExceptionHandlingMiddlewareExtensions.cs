@@ -34,6 +34,25 @@ namespace minimal_api.Domain.Exceptions
                     Exception = ex
                 });
             }
+            catch (InvalidUserValuesException ex)
+            {
+                context.Response.StatusCode = StatusCodes.Status400BadRequest;
+                await problemDetailsService.WriteAsync(new ProblemDetailsContext
+                {
+                    HttpContext = context,
+                    ProblemDetails =
+                    {
+                        Title = "User validation error",
+                        Detail = "There are validation errors",
+                        Status = 400,
+                        Extensions =
+                        {
+                            ["errors"] = ex.Errors
+                        }
+                    },
+                    Exception=ex
+                });
+            }
             catch (JsonException ex)
             {
                 context.Response.StatusCode = StatusCodes.Status400BadRequest;

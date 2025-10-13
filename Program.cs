@@ -120,23 +120,6 @@ public class Program
                 validations.Messages.Add($"{vehicleDTO.Name}'s year cannot be in the future");
             return validations;
         }
-
-        ErrorValidation ValidateUserDTO(UserDTO userDTO)
-        {
-            var validations = new ErrorValidation();
-            if (string.IsNullOrEmpty(userDTO.Email))
-                validations.Messages.Add("Email field cannot be empty");
-            if (string.IsNullOrEmpty(userDTO.Password))
-                validations.Messages.Add("Password field must be filled");
-            if (Enum.TryParse<Role>(userDTO.Role.ToString(), out Role roleParsed))
-            {
-                if ((roleParsed != Role.EDITOR) && (roleParsed != Role.ADMIN))
-                {
-                    validations.Messages.Add($"Invalid role '{roleParsed}'. Role must be 'ADMIN' or 'EDITOR'");
-                }
-            }
-            return validations;
-        }
         #endregion
 
         #region Token Generator
@@ -167,10 +150,18 @@ public class Program
         #region Sign-up and Sign-in endpoint
         app.MapPost("/signup", ([FromBody] UserDTO userDTO, IUserService service) =>
             {
-                var validation = ValidateUserDTO(userDTO);
-                if (validation.Messages.Count > 0)
-                    return Results.BadRequest(validation);
+            var validationErrors = new List<string>();
 
+            if (string.IsNullOrWhiteSpace(userDTO.Email))
+                validationErrors.Add("The 'email' field is required");
+
+            if (string.IsNullOrWhiteSpace(userDTO.Password))
+                validationErrors.Add("The 'password' field is required");
+
+                if (validationErrors.Count > 0)
+                {
+                    throw new InvalidUserValuesException(validationErrors);
+                }
                 var user = new User
                 {
                     Email = userDTO.Email,
@@ -245,13 +236,43 @@ public class Program
                         {
                             ["application/json"] = new OpenApiMediaType
                             {
-                                Example = new OpenApiObject
+                                Examples = new Dictionary<string, OpenApiExample>
                                 {
-                                    ["messages"] = new OpenApiArray
+                                    ["InvalidEnumValue"] = new()
                                     {
-                                        new OpenApiString("Email field cannot be empty"),
-                                        new OpenApiString("Password field cannot be empty"),
-                                        new OpenApiString("Invalid role 'USER'. Role must be 'ADMIN' or 'EDITOR'")
+                                        Summary = "Invalid enum",
+                                        Description = "The value provided is not a valid Role enum name.",
+                                        Value = new OpenApiString(
+                                            JsonSerializer.Serialize(new
+                                            {
+                                                type = "about:blank",
+                                                title = "Invalid value for enum",
+                                                status = 400,
+                                                detail = "Value 'guest' not valid for enum Role.",
+                                                enumType = "Role",
+                                                providedValue = "guest"
+                                            }
+                                        ))
+
+                                    },
+                                    ["ValidationErrors"] = new()
+                                    {
+                                        Summary = "User validation error",
+                                        Description = "Occurs when mandatory information is missing or invalid",
+                                        Value = new OpenApiString(
+                                            JsonSerializer.Serialize(new
+                                            {
+                                                type = "about:blank",
+                                                title = "User validation error",
+                                                status = 400,
+                                                detail = "There are validation errors.",
+                                                errors = new[]
+                                                {
+                                                    "The 'email' field is required",
+                                                    "The 'password' field is required"
+                                                }
+                                            }
+                                        ))
                                     }
                                 }
                             }
