@@ -1,6 +1,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
@@ -157,8 +158,34 @@ public class Program
         #endregion
 
         #region Sign-up and Sign-in endpoint
-        app.MapPost("/signup", ([FromBody] UserDTO userDTO, IUserService service) =>
+        app.MapPost("/signup", async (HttpContext context, IUserService service) =>
             {
+                UserDTO? userDTO;
+                try
+                {
+                    userDTO = await context.Request.ReadFromJsonAsync<UserDTO>();
+                }
+                catch (JsonException ex)
+                {
+                    return Results.BadRequest(new
+                    {
+                        Title = "JSON conversion failed",
+                        Status = 400,
+                        Detail = $"The request body is invalid. Check the value of the field: {ex.Path}",
+                        Error = ex.Message
+                    });
+                }
+
+                if (userDTO is null)
+                {
+                    return Results.BadRequest(new
+                    {
+                        Title = "Corpo da Requisição Ausente",
+                        Status = 400,
+                        Detail = "O corpo da requisição (UserDTO) não pode ser nulo ou vazio."
+                    });
+                }
+
                 var validation = ValidateUserDTO(userDTO);
                 if (validation.Messages.Count > 0)
                     return Results.BadRequest(validation);
@@ -169,7 +196,7 @@ public class Program
                     Password = userDTO.Password,
                     Role = userDTO.Role.ToString()
                 };
-                // service.Save(user);
+                service.Save(user);
                 return Results.Created($"/user/{user.Id}", user);
             }).WithOpenApi(operation => new OpenApiOperation
             {
@@ -179,6 +206,7 @@ public class Program
                 RequestBody = new OpenApiRequestBody
                 {
                     Description = "User data to create new account",
+                    Required = true,
                     Content = new Dictionary<string, OpenApiMediaType>
                     {
                         ["application/json"] = new OpenApiMediaType
@@ -249,7 +277,7 @@ public class Program
                         }
                     }
                 }
-            })
+            }).Accepts<UserDTO>("application/json")
             .AllowAnonymous();
 
         app.MapPost("/login", ([FromBody] LoginDTO loginDTO, IUserService service) =>
