@@ -14,6 +14,7 @@ using Microsoft.OpenApi.Models;
 using minimal_api.Domain.DTOs;
 using minimal_api.Domain.Entities;
 using minimal_api.Domain.Enums;
+using minimal_api.Domain.Exceptions;
 using minimal_api.Domain.Filters;
 using minimal_api.Domain.Interfaces;
 using minimal_api.Domain.ModelViews;
@@ -91,12 +92,18 @@ public class Program
             );
         });
 
+        builder.Services.AddProblemDetails();
+
         builder.Services.ConfigureHttpJsonOptions(options =>
         {
             options.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
+            options.SerializerOptions.Converters.Add(new StrictStringEnumConverter<Role>());
         });
 
         var app = builder.Build();
+
+        app.UseGlobalExceptionHandler();
+
         #endregion
 
         #region Validator
@@ -158,34 +165,8 @@ public class Program
         #endregion
 
         #region Sign-up and Sign-in endpoint
-        app.MapPost("/signup", async (HttpContext context, IUserService service) =>
+        app.MapPost("/signup", ([FromBody] UserDTO userDTO, IUserService service) =>
             {
-                UserDTO? userDTO;
-                try
-                {
-                    userDTO = await context.Request.ReadFromJsonAsync<UserDTO>();
-                }
-                catch (JsonException ex)
-                {
-                    return Results.BadRequest(new
-                    {
-                        Title = "JSON conversion failed",
-                        Status = 400,
-                        Detail = $"The request body is invalid. Check the value of the field: {ex.Path}",
-                        Error = ex.Message
-                    });
-                }
-
-                if (userDTO is null)
-                {
-                    return Results.BadRequest(new
-                    {
-                        Title = "Corpo da Requisição Ausente",
-                        Status = 400,
-                        Detail = "O corpo da requisição (UserDTO) não pode ser nulo ou vazio."
-                    });
-                }
-
                 var validation = ValidateUserDTO(userDTO);
                 if (validation.Messages.Count > 0)
                     return Results.BadRequest(validation);
@@ -277,7 +258,7 @@ public class Program
                         }
                     }
                 }
-            }).Accepts<UserDTO>("application/json")
+            })
             .AllowAnonymous();
 
         app.MapPost("/login", ([FromBody] LoginDTO loginDTO, IUserService service) =>
