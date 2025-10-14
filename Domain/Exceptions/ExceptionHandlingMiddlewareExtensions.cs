@@ -1,4 +1,5 @@
 using System.Text.Json;
+using minimal_api.Domain.Enums;
 
 namespace minimal_api.Domain.Exceptions
 {
@@ -28,7 +29,8 @@ namespace minimal_api.Domain.Exceptions
                         Extensions =
                         {
                             ["enumType"] = ex.EnumType,
-                            ["providedValue"] = ex.ProvidedValue
+                            ["providedValue"] = ex.ProvidedValue,
+                            ["allowedValues"] = Enum.GetNames<Role>()
                         }
                     },
                     Exception = ex

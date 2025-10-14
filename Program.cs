@@ -250,7 +250,12 @@ public class Program
                                                 status = 400,
                                                 detail = "Value 'guest' not valid for enum Role.",
                                                 enumType = "Role",
-                                                providedValue = "guest"
+                                                providedValue = "guest",
+                                                allowedValues = new[]
+                                                {
+                                                    "ADMIN",
+                                                    "EDITOR"
+                                                }
                                             }
                                         ))
 
@@ -499,7 +504,10 @@ public class Program
             vehicleService.Save(vehicle);
 
             return Results.Created($"/vehicle/{vehicle.Id}", vehicle);
-        }).WithTags("Vehicles")
+        }).WithOpenApi(operation => new OpenApiOperation
+        {
+            Tags = [new() { Name = "Vehicles" }]
+        })
         .RequireAuthorization(new AuthorizeAttribute { Roles = $"{nameof(Role.ADMIN)},{nameof(Role.EDITOR)}" });
 
         app.MapPost("/vehicles", ([FromBody] List<VehicleDTO> vehicleDTOs, IVehicleService vehicleService) =>
