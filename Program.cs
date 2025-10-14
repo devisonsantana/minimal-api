@@ -150,13 +150,13 @@ public class Program
         #region Sign-up and Sign-in endpoint
         app.MapPost("/signup", ([FromBody] UserDTO userDTO, IUserService service) =>
             {
-            var validationErrors = new List<string>();
+                var validationErrors = new List<string>();
 
-            if (string.IsNullOrWhiteSpace(userDTO.Email))
-                validationErrors.Add("The 'email' field is required");
+                if (string.IsNullOrWhiteSpace(userDTO.Email))
+                    validationErrors.Add("The 'email' field is required");
 
-            if (string.IsNullOrWhiteSpace(userDTO.Password))
-                validationErrors.Add("The 'password' field is required");
+                if (string.IsNullOrWhiteSpace(userDTO.Password))
+                    validationErrors.Add("The 'password' field is required");
 
                 if (validationErrors.Count > 0)
                 {
@@ -204,7 +204,7 @@ public class Program
                             },
                             Example = new OpenApiObject
                             {
-                                ["email"] = new OpenApiString("jonhdoe@example.com"),
+                                ["email"] = new OpenApiString("johndoe@example.com"),
                                 ["password"] = new OpenApiString("your-password"),
                                 ["role"] = new OpenApiString("EDITOR")
                             }
@@ -223,7 +223,7 @@ public class Program
                                 Example = new OpenApiObject
                                 {
                                     ["id"] = new OpenApiInteger(1),
-                                    ["email"] = new OpenApiString("jonhdoe@example.com"),
+                                    ["email"] = new OpenApiString("johndoe@example.com"),
                                     ["role"] = new OpenApiString("EDITOR")
                                 }
                             }
@@ -296,7 +296,71 @@ public class Program
                     });
                 }
                 return Results.Unauthorized();
-            }).WithTags("Signup/Login").AllowAnonymous();
+            }).WithOpenApi(operation => new OpenApiOperation
+            {
+                Summary = "Authenticate an existing user",
+                Description = "Validates the provided credentials and returns a JWT token if successful",
+                Tags = [new OpenApiTag { Name = "Signup/Login" }],
+                RequestBody = new OpenApiRequestBody
+                {
+                    Description = "Login credentials (email and password)",
+                    Required = true,
+                    Content = new Dictionary<string, OpenApiMediaType>
+                    {
+                        ["application/json"] = new OpenApiMediaType
+                        {
+                            Schema = new OpenApiSchema
+                            {
+                                Type = "object",
+                                Properties = new Dictionary<string, OpenApiSchema>
+                                {
+                                    ["email"] = new OpenApiSchema { Type = "string", Format = "email" },
+                                    ["password"] = new OpenApiSchema { Type = "string", Format = "password" }
+                                },
+                                Required = new HashSet<string> { "email", "password" }
+                            },
+                            Example = new OpenApiObject
+                            {
+                                ["email"] = new OpenApiString("johndoe@example.com"),
+                                ["password"] = new OpenApiString("your-password")
+                            }
+                        }
+                    }
+                },
+                Responses = new OpenApiResponses
+                {
+                    ["200"] = new OpenApiResponse
+                    {
+                        Description = "Login successful, returns JWT token",
+                        Content = new Dictionary<string, OpenApiMediaType>
+                        {
+                            ["application/json"] = new OpenApiMediaType
+                            {
+                                Schema = new OpenApiSchema
+                                {
+                                    Type = "object",
+                                    Properties = new Dictionary<string, OpenApiSchema>
+                                    {
+                                        ["email"] = new OpenApiSchema { Type = "string" },
+                                        ["role"] = new OpenApiSchema { Type = "string" },
+                                        ["token"] = new OpenApiSchema { Type = "string", Description = "JWT access token" }
+                                    }
+                                },
+                                Example = new OpenApiObject
+                                {
+                                    ["email"] = new OpenApiString("johndoe@example.com"),
+                                    ["role"] = new OpenApiString("EDITOR"),
+                                    ["token"] = new OpenApiString("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...")
+                                }
+                            }
+                        }
+                    },
+                    ["401"] = new OpenApiResponse
+                    {
+                        Description = "Invalid email or password",
+                    }
+                }
+            }).AllowAnonymous();
         #endregion
 
         #region User endpoint
@@ -343,7 +407,7 @@ public class Program
                                 new OpenApiObject
                                 {
                                     ["id"] = new OpenApiInteger(1),
-                                    ["email"] = new OpenApiString("jonhdoe@example.com"),
+                                    ["email"] = new OpenApiString("johndoe@example.com"),
                                     ["role"] = new OpenApiString("EDITOR")
                                 }
                             }
@@ -391,7 +455,7 @@ public class Program
                             Example = new OpenApiObject
                             {
                                 ["id"] = new OpenApiInteger(1),
-                                ["email"] = new OpenApiString("jonhdoe@example.com"),
+                                ["email"] = new OpenApiString("johndoe@example.com"),
                                 ["role"] = new OpenApiString("EDITOR")
                             }
                         }

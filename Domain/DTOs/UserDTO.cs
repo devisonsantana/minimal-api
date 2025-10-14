@@ -6,8 +6,8 @@ namespace minimal_api.Domain.DTOs
 {
     public record UserDTO
     {
-        public string Email { get; set; } = default;
-        public string Password { get; set; } = default;
+        public required string Email { get; set; }
+        public required string Password { get; set; }
         [JsonConverter(typeof(StrictStringEnumConverter<Role>))]
         public Role Role { get; set; } = Role.EDITOR;
     }
