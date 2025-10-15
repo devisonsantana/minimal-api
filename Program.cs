@@ -144,7 +144,41 @@ public class Program
         #endregion
 
         #region Home endpoint
-        app.MapGet("/", () => Results.Json(new Home())).WithTags("Home");
+        app.MapGet("/", () => Results.Json(new Home())).WithOpenApi(operation => new OpenApiOperation
+        {
+            Summary = "Home page",
+            Description = "Returns a welcome message and a link to the API documentation. Useful as a health or info endpoint.",
+            Tags = [ new OpenApiTag{
+                Name = "Home"
+            }],
+            Responses = new OpenApiResponses
+            {
+                ["200"] = new OpenApiResponse
+                {
+                    Description = "Home page loaded successfully",
+                    Content = new Dictionary<string, OpenApiMediaType>
+                    {
+                        ["application/json"] = new OpenApiMediaType
+                        {
+                            Example = new OpenApiObject
+                            {
+                                ["message"] = new OpenApiString("Welcome to Vehicle Minimal API, feel free to test our endpoints, some requests require a token authentication"),
+                                ["documentation"] = new OpenApiString("/swagger/index.html")
+                            },
+                            Schema = new OpenApiSchema
+                            {
+                                Type = "object",
+                                Properties = new Dictionary<string, OpenApiSchema>
+                                {
+                                    ["message"] = new OpenApiSchema { Type = "string" },
+                                    ["documentation"] = new OpenApiSchema { Type = "string" }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }).Produces<Home>(statusCode: StatusCodes.Status200OK);
         #endregion
 
         #region Sign-up and Sign-in endpoint
@@ -168,8 +202,8 @@ public class Program
                     Password = userDTO.Password,
                     Role = userDTO.Role.ToString()
                 };
-                service.Save(user);
-                return Results.Created($"/user/{user.Id}", user);
+                var usrView = new UserModelView(service.Save(user));
+                return Results.Created($"/user/{usrView.Id}", usrView);
             }).WithOpenApi(operation => new OpenApiOperation
             {
                 Summary = "Register a new user",
@@ -225,6 +259,16 @@ public class Program
                                     ["id"] = new OpenApiInteger(1),
                                     ["email"] = new OpenApiString("johndoe@example.com"),
                                     ["role"] = new OpenApiString("EDITOR")
+                                },
+                                Schema = new OpenApiSchema
+                                {
+                                    Type = "object",
+                                    Properties = new Dictionary<string, OpenApiSchema>
+                                    {
+                                        ["id"] = new OpenApiSchema { Type = "integer" },
+                                        ["email"] = new OpenApiSchema { Type = "string" },
+                                        ["role"] = new OpenApiSchema { Type = "string" }
+                                    }
                                 }
                             }
                         }
@@ -258,7 +302,6 @@ public class Program
                                                 }
                                             }
                                         ))
-
                                     },
                                     ["ValidationErrors"] = new()
                                     {
@@ -279,6 +322,15 @@ public class Program
                                             }
                                         ))
                                     }
+                                },
+                                Schema = new OpenApiSchema
+                                {
+                                    Type = "object",
+                                    Properties = new Dictionary<string, OpenApiSchema>
+                                    {
+                                        ["type"] = new OpenApiSchema { Type = "string" }
+                                        // incomplete
+                                    }
                                 }
                             }
                         }
@@ -290,7 +342,7 @@ public class Program
         app.MapPost("/login", ([FromBody] LoginDTO loginDTO, IUserService service) =>
             {
                 var usr = service.Login(loginDTO);
-                if (usr != null)
+                if (usr is not null)
                 {
                     var token = GenerateTokenJWT(usr);
                     return Results.Ok(new UserSignedModelView
@@ -300,7 +352,7 @@ public class Program
                         Token = token
                     });
                 }
-                return Results.Unauthorized();
+                throw new LoginCredentialsException();
             }).WithOpenApi(operation => new OpenApiOperation
             {
                 Summary = "Authenticate an existing user",
@@ -336,21 +388,11 @@ public class Program
                 {
                     ["200"] = new OpenApiResponse
                     {
-                        Description = "Login successful, returns JWT token",
+                        Description = "Login successfully, returns JWT token",
                         Content = new Dictionary<string, OpenApiMediaType>
                         {
                             ["application/json"] = new OpenApiMediaType
                             {
-                                Schema = new OpenApiSchema
-                                {
-                                    Type = "object",
-                                    Properties = new Dictionary<string, OpenApiSchema>
-                                    {
-                                        ["email"] = new OpenApiSchema { Type = "string" },
-                                        ["role"] = new OpenApiSchema { Type = "string" },
-                                        ["token"] = new OpenApiSchema { Type = "string", Description = "JWT access token" }
-                                    }
-                                },
                                 Example = new OpenApiObject
                                 {
                                     ["email"] = new OpenApiString("johndoe@example.com"),
@@ -359,13 +401,11 @@ public class Program
                                 }
                             }
                         }
-                    },
-                    ["401"] = new OpenApiResponse
-                    {
-                        Description = "Invalid email or password",
                     }
                 }
-            }).AllowAnonymous();
+            }).Produces<UserSignedModelView>(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status401Unauthorized)
+            .AllowAnonymous();
         #endregion
 
         #region User endpoint
@@ -424,7 +464,7 @@ public class Program
                 ["403"] = new OpenApiResponse
                 { Description = "Forbidden - User does not have ADMIN role" }
             }
-        })
+        }).Produces<UserModelView>(StatusCodes.Status200OK)
         .RequireAuthorization(new AuthorizeAttribute { Roles = nameof(Role.ADMIN) });
 
         app.MapGet("/user/{id}", ([FromRoute] int id, IUserService service) =>
@@ -483,7 +523,7 @@ public class Program
                 ["401"] = new OpenApiResponse { Description = "Unauthorized - Missing or invalid JWT token" },
                 ["403"] = new OpenApiResponse { Description = "Forbidden - User does not have ADMIN role" }
             }
-        })
+        }).Produces<UserModelView>(StatusCodes.Status200OK)
         .RequireAuthorization(new AuthorizeAttribute { Roles = nameof(Role.ADMIN) });
         #endregion
 
