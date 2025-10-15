@@ -74,6 +74,20 @@ namespace minimal_api.Domain.Exceptions
                     Exception = ex
                 });
             }
+            catch (LoginCredentialsException ex)
+            {
+                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                await problemDetailsService.WriteAsync(new ProblemDetailsContext
+                {
+                    HttpContext = context,
+                    ProblemDetails =
+                    {
+                        Title = "Credential error",
+                        Detail = ex.Message,
+                        Status = 401
+                    }
+                });
+            }
             catch (JsonException ex)
             {
                 context.Response.StatusCode = StatusCodes.Status400BadRequest;
