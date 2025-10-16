@@ -546,7 +546,68 @@ public class Program
             return Results.Created($"/vehicle/{vehicle.Id}", vehicle);
         }).WithOpenApi(operation => new OpenApiOperation
         {
-            Tags = [new() { Name = "Vehicles" }]
+            Summary = "Register a new vehicle",
+            Description = "Creates a new vehicle entry. Only users with ADMIN or EDITOR roles can access this endpoint.",
+            Tags = [new() { Name = "Vehicles" }],
+            RequestBody = new OpenApiRequestBody
+            {
+                Required = true,
+                Description = "Vehicle data to be registered",
+                Content = new Dictionary<string, OpenApiMediaType>
+                {
+                    ["application/json"] = new OpenApiMediaType
+                    {
+                        Schema = new OpenApiSchema
+                        {
+                            Type = "object",
+                            Properties = new Dictionary<string, OpenApiSchema>
+                            {
+                                ["name"] = new OpenApiSchema { Type = "string", Description = "Vehicle model name" },
+                                ["brand"] = new OpenApiSchema { Type = "string", Description = "Manufacturer brand" },
+                                ["year"] = new OpenApiSchema { Type = "integer", Description = "Year of manufacture" }
+                            },
+                            Required = new HashSet<string> { "name", "brand", "year" }
+                        },
+                        Example = new OpenApiObject
+                        {
+                            ["name"] = new OpenApiString("Civic"),
+                            ["brand"] = new OpenApiString("Honda"),
+                            ["year"] = new OpenApiInteger(2023)
+                        }
+                    }
+                }
+            },
+            Responses = new OpenApiResponses
+            {
+                ["201"] = new OpenApiResponse
+                {
+                    Description = "Vehicle successfully created",
+                    Content = new Dictionary<string, OpenApiMediaType>
+                    {
+                        ["application/json"] = new OpenApiMediaType
+                        {
+                            Example = new OpenApiObject
+                            {
+                                ["id"] = new OpenApiInteger(1),
+                                ["name"] = new OpenApiString("Civic"),
+                                ["brand"] = new OpenApiString("Honda"),
+                                ["year"] = new OpenApiInteger(2023)
+                            },
+                            Schema = new OpenApiSchema
+                            {
+                                Type = "object",
+                                Properties = new Dictionary<string, OpenApiSchema>
+                                {
+                                    ["id"] = new OpenApiSchema { Type = "integer" },
+                                    ["name"] = new OpenApiSchema { Type = "string" },
+                                    ["brand"] = new OpenApiSchema { Type = "string" },
+                                    ["year"] = new OpenApiSchema { Type = "integer" }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         })
         .RequireAuthorization(new AuthorizeAttribute { Roles = $"{nameof(Role.ADMIN)},{nameof(Role.EDITOR)}" });
 
