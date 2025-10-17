@@ -606,7 +606,10 @@ public class Program
                             }
                         }
                     }
-                }
+                },
+                ["401"] = new OpenApiResponse { Description = "Unauthorized — missing or invalid token" },
+                ["403"] = new OpenApiResponse { Description = "Forbidden — user does not have the required role (ADMIN or EDITOR)" }
+
             }
         })
         .RequireAuthorization(new AuthorizeAttribute { Roles = $"{nameof(Role.ADMIN)},{nameof(Role.EDITOR)}" });
