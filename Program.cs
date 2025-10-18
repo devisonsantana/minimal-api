@@ -543,7 +543,7 @@ public class Program
 
             vehicleService.Save(vehicle);
 
-            return Results.Created($"/vehicle/{vehicle.Id}", vehicle);
+            return Results.Created($"/vehicle/{vehicle.Id}", new VehicleModelView(vehicle));
         }).WithOpenApi(operation => new OpenApiOperation
         {
             Summary = "Register a new vehicle",
@@ -607,11 +607,32 @@ public class Program
                         }
                     }
                 },
+                ["400"] = new OpenApiResponse
+                {
+                    Description = "Vehicle error validation",
+                    Content = new Dictionary<string, OpenApiMediaType>
+                    {
+                        ["application/json"] = new OpenApiMediaType
+                        {
+                            Example = new OpenApiObject
+                            {
+                                ["messages"] = new OpenApiArray
+                                {
+                                    new OpenApiString("Vehicle name cannot be empty"),
+                                    new OpenApiString("Vehicle brand cannot be empty"),
+                                    new OpenApiString("Civic's year cannot be too old, just above 1769"),
+                                    new OpenApiString("Civic's year cannot be in the future")
+                                }
+                            }
+                        }
+                    }
+                },
                 ["401"] = new OpenApiResponse { Description = "Unauthorized — missing or invalid token" },
                 ["403"] = new OpenApiResponse { Description = "Forbidden — user does not have the required role (ADMIN or EDITOR)" }
 
             }
-        })
+        }).Produces<VehicleModelView>(StatusCodes.Status201Created)
+        .Produces<ErrorValidation>(StatusCodes.Status400BadRequest)
         .RequireAuthorization(new AuthorizeAttribute { Roles = $"{nameof(Role.ADMIN)},{nameof(Role.EDITOR)}" });
 
         app.MapPost("/vehicles", ([FromBody] List<VehicleDTO> vehicleDTOs, IVehicleService vehicleService) =>
@@ -693,11 +714,44 @@ public class Program
                         }
                     }
                 },
+                ["400"] = new OpenApiResponse
+                {
+                    Description = "Vehicle error validation",
+                    Content = new Dictionary<string, OpenApiMediaType>
+                    {
+                        ["application/json"] = new OpenApiMediaType
+                        {
+                            Example = new OpenApiObject
+                            {
+                                ["messages"] = new OpenApiArray
+                                {
+                                    new OpenApiString("Vehicle name cannot be empty"),
+                                    new OpenApiString("Vehicle brand cannot be empty"),
+                                    new OpenApiString("Civic's year cannot be too old, just above 1769"),
+                                    new OpenApiString("Civic's year cannot be in the future")
+                                }
+                            },
+                            Schema = new OpenApiSchema
+                            {
+                                Type = "object",
+                                Properties = new Dictionary<string, OpenApiSchema>
+                                {
+                                    ["message"] = new OpenApiSchema
+                                    {
+                                        Type = "array",
+                                        Items = new OpenApiSchema { Type = "string" }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
                 ["401"] = new OpenApiResponse { Description = "Unauthorized — missing or invalid token" },
                 ["403"] = new OpenApiResponse { Description = "Forbidden — user does not have the required role (ADMIN or EDITOR)" }
 
             }
         }).Produces<List<VehicleModelView>>(StatusCodes.Status201Created)
+        .Produces<ErrorValidation>(StatusCodes.Status400BadRequest)
         .RequireAuthorization(new AuthorizeAttribute { Roles = nameof(Role.ADMIN) });
 
         app.MapGet("/vehicle", ([FromQuery] int? page, [FromQuery] string? name, [FromQuery] string? brand, IVehicleService service) =>
