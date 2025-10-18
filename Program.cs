@@ -633,8 +633,68 @@ public class Program
             }
 
             vehicleService.SaveAll(vehicles);
-            return Results.Created($"/vehicle", vehicles);
-        }).WithTags("Vehicles")
+            var response = vehicles.Select(v => new VehicleModelView(v)).ToList();
+            return Results.Created($"/vehicle", response);
+        }).WithOpenApi(operation => new OpenApiOperation
+        {
+            Summary = "Register a list of vehicles",
+            Description = "Creates a new vehicles entry, recommended for high amount of vehicle data. Only users with ADMIN or EDITOR roles can access this endpoint.",
+            Tags = [new OpenApiTag { Name = "Vehicles" }],
+            RequestBody = new OpenApiRequestBody
+            {
+                Description = "List of vehicle data to be registered",
+                Required = true,
+                Content = new Dictionary<string, OpenApiMediaType>
+                {
+                    ["application/json"] = new OpenApiMediaType
+                    {
+                        Example = new OpenApiArray
+                        {
+                            new OpenApiObject
+                            {
+                                ["name"] = new OpenApiString("Civic"),
+                                ["brand"] = new OpenApiString("Honda"),
+                                ["year"] = new OpenApiInteger(2023)
+                            }
+                        },
+                        Schema = new OpenApiSchema
+                        {
+                            Type = "object",
+                            Properties = new Dictionary<string, OpenApiSchema>
+                            {
+                                ["name"] = new OpenApiSchema { Type = "string", Description = "Vehicle model name" },
+                                ["brand"] = new OpenApiSchema { Type = "string", Description = "Manufacturer brand" },
+                                ["year"] = new OpenApiSchema { Type = "integer", Description = "Year of manufacture" }
+                            },
+                            Required = new HashSet<string> { "name", "brand", "year" }
+                        }
+                    }
+                }
+            },
+            Responses = new OpenApiResponses
+            {
+                ["201"] = new OpenApiResponse
+                {
+                    Description = "Vehicles sucessfully created",
+                    Content = new Dictionary<string, OpenApiMediaType>
+                    {
+                        ["application/json"] = new OpenApiMediaType
+                        {
+                            Example = new OpenApiArray
+                            {
+                                new OpenApiObject
+                                {
+                                    ["id"] = new OpenApiInteger(1),
+                                    ["name"] = new OpenApiString("Civic"),
+                                    ["brand"] = new OpenApiString("Honda"),
+                                    ["year"] = new OpenApiInteger(2023)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }).Produces<List<VehicleModelView>>(StatusCodes.Status201Created)
         .RequireAuthorization(new AuthorizeAttribute { Roles = nameof(Role.ADMIN) });
 
         app.MapGet("/vehicle", ([FromQuery] int? page, [FromQuery] string? name, [FromQuery] string? brand, IVehicleService service) =>
