@@ -759,8 +759,7 @@ public class Program
             var vehicles = service.FindAll(page: page ??= 1, name: name, brand: brand);
 
             return Results.Ok<List<Vehicle>>(vehicles);
-        }).WithTags("Vehicles")
-        .RequireAuthorization(new AuthorizeAttribute { Roles = $"{nameof(Role.ADMIN)},{nameof(Role.EDITOR)}" });
+        }).WithTags("Vehicles").AllowAnonymous();
 
         app.MapGet("/vehicle/{id}", ([FromRoute] int id, IVehicleService vehicleService) =>
         {
@@ -768,8 +767,7 @@ public class Program
             if (vehicle != null) return Results.Ok(vehicle);
 
             return Results.NotFound();
-        }).WithTags("Vehicles")
-        .RequireAuthorization(new AuthorizeAttribute { Roles = $"{nameof(Role.ADMIN)},{nameof(Role.EDITOR)}" });
+        }).WithTags("Vehicles").AllowAnonymous();
 
         app.MapPut("/vehicle/{id}", ([FromRoute] int id, VehicleDTO vehicleDTO, IVehicleService vehicleService) =>
         {
