@@ -416,6 +416,47 @@ public class Program
                                 }
                             }
                         }
+                    },
+                    ["401"] = new OpenApiResponse
+                    {
+                        Description = "Not recognized credentials",
+                        Content = new Dictionary<string, OpenApiMediaType>
+                        {
+                            ["application/json"] = new OpenApiMediaType
+                            {
+                                Example = new OpenApiObject
+                                {
+                                    ["type"] = new OpenApiString("about:blank"),
+                                    ["title"] = new OpenApiString("Credential error"),
+                                    ["status"] = new OpenApiInteger(401),
+                                    ["detail"] = new OpenApiString("Invalid email or password"),
+                                },
+                                Schema = new OpenApiSchema
+                                {
+                                    Type = "object",
+                                    Properties = new Dictionary<string, OpenApiSchema>
+                                    {
+                                        ["type"] = new OpenApiSchema { Type = "string" },
+                                        ["title"] = new OpenApiSchema { Type = "string" },
+                                        ["status"] = new OpenApiSchema { Type = "integer" },
+                                        ["detail"] = new OpenApiSchema { Type = "string" },
+                                        ["errors"] = new OpenApiSchema
+                                        {
+                                            Type = "array",
+                                            Items = new OpenApiSchema { Type = "string" },
+                                            Description = "List of validation messages (optional)"
+                                        },
+                                        ["enumType"] = new OpenApiSchema { Type = "string", Description = "Enum type name (if applicable)" },
+                                        ["providedValue"] = new OpenApiSchema { Type = "string" },
+                                        ["allowedValues"] = new OpenApiSchema
+                                        {
+                                            Type = "array",
+                                            Items = new OpenApiSchema { Type = "string" }
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }).Produces<UserSignedModelView>(StatusCodes.Status200OK)
