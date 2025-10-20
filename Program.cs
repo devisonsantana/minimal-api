@@ -328,8 +328,23 @@ public class Program
                                     Type = "object",
                                     Properties = new Dictionary<string, OpenApiSchema>
                                     {
-                                        ["type"] = new OpenApiSchema { Type = "string" }
-                                        // incomplete
+                                        ["type"] = new OpenApiSchema { Type = "string" },
+                                        ["title"] = new OpenApiSchema { Type = "string" },
+                                        ["status"] = new OpenApiSchema { Type = "integer" },
+                                        ["detail"] = new OpenApiSchema { Type = "string" },
+                                        ["errors"] = new OpenApiSchema
+                                        {
+                                            Type = "array",
+                                            Items = new OpenApiSchema { Type = "string" },
+                                            Description = "List of validation messages (optional)"
+                                        },
+                                        ["enumType"] = new OpenApiSchema { Type = "string", Description = "Enum type name (if applicable)" },
+                                        ["providedValue"] = new OpenApiSchema { Type = "string" },
+                                        ["allowedValues"] = new OpenApiSchema
+                                        {
+                                            Type = "array",
+                                            Items = new OpenApiSchema { Type = "string" }
+                                        }
                                     }
                                 }
                             }
