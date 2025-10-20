@@ -439,20 +439,7 @@ public class Program
                                         ["type"] = new OpenApiSchema { Type = "string" },
                                         ["title"] = new OpenApiSchema { Type = "string" },
                                         ["status"] = new OpenApiSchema { Type = "integer" },
-                                        ["detail"] = new OpenApiSchema { Type = "string" },
-                                        ["errors"] = new OpenApiSchema
-                                        {
-                                            Type = "array",
-                                            Items = new OpenApiSchema { Type = "string" },
-                                            Description = "List of validation messages (optional)"
-                                        },
-                                        ["enumType"] = new OpenApiSchema { Type = "string", Description = "Enum type name (if applicable)" },
-                                        ["providedValue"] = new OpenApiSchema { Type = "string" },
-                                        ["allowedValues"] = new OpenApiSchema
-                                        {
-                                            Type = "array",
-                                            Items = new OpenApiSchema { Type = "string" }
-                                        }
+                                        ["detail"] = new OpenApiSchema { Type = "string" }
                                     }
                                 }
                             }
@@ -460,7 +447,7 @@ public class Program
                     }
                 }
             }).Produces<UserSignedModelView>(StatusCodes.Status200OK)
-            .Produces(StatusCodes.Status401Unauthorized)
+            
             .AllowAnonymous();
         #endregion
 
