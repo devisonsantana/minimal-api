@@ -501,6 +501,36 @@ public class Program
                         }
                     }
                 },
+                ["400"] = new OpenApiResponse
+                {
+                    Description = "Invalid ID supplied",
+                    Content = new Dictionary<string, OpenApiMediaType>
+                    {
+                        ["application/json"] = new OpenApiMediaType
+                        {
+                            Example = new OpenApiObject
+                            {
+                                ["type"] = new OpenApiString("about:blank"),
+                                ["title"] = new OpenApiString("Invalid parameter"),
+                                ["status"] = new OpenApiInteger(400),
+                                ["detail"] = new OpenApiString("Invalid ID parameter — must be greater than zero integer"),
+                                ["providedValue"] = new OpenApiInteger(0)
+                            },
+                            Schema = new OpenApiSchema
+                            {
+                                Type = "object",
+                                Properties = new Dictionary<string, OpenApiSchema>
+                                {
+                                    ["type"] = new OpenApiSchema { Type = "string" },
+                                    ["title"] = new OpenApiSchema { Type = "string" },
+                                    ["status"] = new OpenApiSchema { Type = "integer" },
+                                    ["detail"] = new OpenApiSchema { Type = "string" },
+                                    ["providedValue"] = new OpenApiSchema { Type = "integer" }
+                                }
+                            }
+                        }
+                    }
+                },
                 ["401"] = new OpenApiResponse
                 { Description = "Unauthorized - Missing or invalid JWT token" },
                 ["403"] = new OpenApiResponse
@@ -948,6 +978,14 @@ public class Program
                             Example = new OpenApiObject
                             {
                                 ["error"] = new OpenApiString("Vehicle with ID 99 not found")
+                            },
+                            Schema = new OpenApiSchema
+                            {
+                                Type = "object",
+                                Properties = new Dictionary<string, OpenApiSchema>
+                                {
+                                    ["error"] = new OpenApiSchema { Type = "string" }
+                                }
                             }
                         }
                     }
