@@ -878,7 +878,7 @@ public class Program
                 },
                 ["400"] = new OpenApiResponse
                 {
-                    Description = "Invalid query parameters (e.g., page number must be positive)"
+                    Description = "Invalid query parameters"
                 }
             }
         }).AllowAnonymous();
@@ -963,7 +963,7 @@ public class Program
                                 ["type"] = new OpenApiString("about:blank"),
                                 ["title"] = new OpenApiString("Invalid parameter"),
                                 ["status"] = new OpenApiInteger(400),
-                                ["detail"] = new OpenApiString("Invalid ID parameter — must be a positive integer or greater than zero"),
+                                ["detail"] = new OpenApiString("Invalid ID parameter — must be greater than zero integer"),
                                 ["providedValue"] = new OpenApiInteger(0)
                             },
                             Schema = new OpenApiSchema

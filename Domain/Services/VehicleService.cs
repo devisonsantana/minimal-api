@@ -27,7 +27,7 @@ namespace minimal_api.Domain.Services
 
         public List<Vehicle> FindAll(int page, string? name = null, string? brand = null)
         {
-            if (page <= 0) throw new InvalidParameterException(page, "The value for 'page' must be positive.");
+            if (page <= 0) throw new InvalidParameterException(page, "The value for 'page' must be greater than zero.");
             var query = _dbContext.Vehicles.AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(name))
@@ -43,7 +43,7 @@ namespace minimal_api.Domain.Services
 
         public Vehicle? FindById(int id)
         {
-            if (id <= 0) throw new InvalidParameterException(id, "Invalid ID parameter — must be a positive integer or greater than zero");
+            if (id <= 0) throw new InvalidParameterException(id, "Invalid ID parameter — must be greater than zero integer");
             // return _dbContext.Vehicles.Find(id);
             return _dbContext.Vehicles.Where(v => v.Id == id).FirstOrDefault();
         }

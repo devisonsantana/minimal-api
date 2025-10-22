@@ -16,7 +16,7 @@ namespace minimal_api.Domain.Services
 
         public List<User> FindAll(int page)
         {
-            if (page <= 0) throw new InvalidParameterException(page, $"The value for 'page' must be positive.");
+            if (page <= 0) throw new InvalidParameterException(page, $"The value for 'page' must be greater than zero");
             var query = _dbContext.Users.AsQueryable();
             int itemsPerPage = 10;
             return [.. query.Skip(((int)page - 1) * itemsPerPage).Take(itemsPerPage)];
@@ -24,6 +24,7 @@ namespace minimal_api.Domain.Services
 
         public User? FindById(int id)
         {
+            if (id <= 0) throw new InvalidParameterException(id, "Invalid ID parameter — must be greater than zero integer");
             return _dbContext.Users.Where(u => u.Id == id).FirstOrDefault();
         }
 
