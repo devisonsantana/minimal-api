@@ -181,7 +181,7 @@ public class Program
         }).Produces<Home>(statusCode: StatusCodes.Status200OK);
         #endregion
 
-        #region Sign-up and Sign-in endpoint
+        #region Post new user
         app.MapPost("/signup", ([FromBody] UserDTO userDTO, IUserService service) =>
             {
                 var validationErrors = new List<string>();
@@ -353,7 +353,9 @@ public class Program
                 }
             })
             .AllowAnonymous();
+        #endregion
 
+        #region Post login (returns a valid token access)
         app.MapPost("/login", ([FromBody] LoginDTO loginDTO, IUserService service) =>
             {
                 var usr = service.Login(loginDTO);
@@ -450,7 +452,7 @@ public class Program
             .AllowAnonymous();
         #endregion
 
-        #region User endpoint
+        #region Get all user (ADMIN is required)
         app.MapGet("/user", ([FromQuery] int? page, IUserService service) =>
         {
             var users = new List<UserModelView>();
@@ -538,7 +540,9 @@ public class Program
             }
         }).Produces<List<UserModelView>>(StatusCodes.Status200OK)
         .RequireAuthorization(new AuthorizeAttribute { Roles = nameof(Role.ADMIN) });
+        #endregion
 
+        #region Get user by ID (ADMIN is required)
         app.MapGet("/user/{id}", ([FromRoute] int id, IUserService service) =>
         {
             var usr = service.FindById(id);
@@ -599,7 +603,7 @@ public class Program
         .RequireAuthorization(new AuthorizeAttribute { Roles = nameof(Role.ADMIN) });
         #endregion
 
-        #region Vehicle endpoint
+        #region Post new vehicle
         app.MapPost("/vehicle", ([FromBody] VehicleDTO vehicleDTO, IVehicleService vehicleService) =>
         {
             var validation = ValidateVehicleDTO(vehicleDTO);
@@ -706,7 +710,9 @@ public class Program
         }).Produces<VehicleModelView>(StatusCodes.Status201Created)
         .Produces<ErrorValidation>(StatusCodes.Status400BadRequest)
         .RequireAuthorization(new AuthorizeAttribute { Roles = $"{nameof(Role.ADMIN)},{nameof(Role.EDITOR)}" });
+        #endregion
 
+        #region Post new list of vehicles
         app.MapPost("/vehicles", ([FromBody] List<VehicleDTO> vehicleDTOs, IVehicleService vehicleService) =>
         {
             var vehicles = new List<Vehicle>();
@@ -825,7 +831,9 @@ public class Program
         }).Produces<List<VehicleModelView>>(StatusCodes.Status201Created)
         .Produces<ErrorValidation>(StatusCodes.Status400BadRequest)
         .RequireAuthorization(new AuthorizeAttribute { Roles = nameof(Role.ADMIN) });
+        #endregion
 
+        #region Get all vehicles by name/brand [page = 1]
         app.MapGet("/vehicle", ([FromQuery] int? page, [FromQuery] string? name, [FromQuery] string? brand, IVehicleService service) =>
         {
             var vehicles = service.FindAll(page: page ??= 1, name: name, brand: brand);
@@ -913,7 +921,9 @@ public class Program
             }
         }).Produces<List<VehicleModelView>>(StatusCodes.Status200OK)
         .AllowAnonymous();
+        #endregion
 
+        #region Get vehicle by ID
         app.MapGet("/vehicle/{id}", ([FromRoute] int id, IVehicleService vehicleService) =>
         {
             var vehicle = vehicleService.FindById(id);
@@ -1023,7 +1033,9 @@ public class Program
             }
         }).Produces<VehicleModelView>(StatusCodes.Status200OK)
         .AllowAnonymous();
+        #endregion
 
+        #region Put vehicle by ID (ADMIN is required)
         app.MapPut("/vehicle/{id}", ([FromRoute] int id, VehicleDTO vehicleDTO, IVehicleService vehicleService) =>
         {
             var vehicle = vehicleService.FindById(id);
@@ -1041,7 +1053,9 @@ public class Program
             return Results.NoContent();
         }).WithTags("Vehicles")
         .RequireAuthorization(new AuthorizeAttribute { Roles = nameof(Role.ADMIN) });
+        #endregion
 
+        #region Delete Vehicle by ID (ADMIN is required)
         app.MapDelete("/vehicle/{id}", ([FromRoute] int id, IVehicleService vehicleService) =>
         {
             var vehicle = vehicleService.FindById(id);
