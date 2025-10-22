@@ -66,8 +66,7 @@ public class Program
                 Description = "API for managing users and vehicles with JWT authentication",
                 Contact = new OpenApiContact
                 {
-                    Name = "Devison Santana",
-                    Email = "dev.devisonsan@hotmail.com"
+                    Name = "Devison Santana"
                 }
             });
             options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
@@ -582,6 +581,36 @@ public class Program
                         }
                     }
                 },
+                ["400"] = new OpenApiResponse
+                {
+                    Description = "Invalid ID supplied",
+                    Content = new Dictionary<string, OpenApiMediaType>
+                    {
+                        ["application/json"] = new OpenApiMediaType
+                        {
+                            Example = new OpenApiObject
+                            {
+                                ["type"] = new OpenApiString("about:blank"),
+                                ["title"] = new OpenApiString("Invalid parameter"),
+                                ["status"] = new OpenApiInteger(400),
+                                ["detail"] = new OpenApiString("Invalid ID parameter — must be greater than zero integer"),
+                                ["providedValue"] = new OpenApiInteger(0)
+                            },
+                            Schema = new OpenApiSchema
+                            {
+                                Type = "object",
+                                Properties = new Dictionary<string, OpenApiSchema>
+                                {
+                                    ["type"] = new OpenApiSchema { Type = "string" },
+                                    ["title"] = new OpenApiSchema { Type = "string" },
+                                    ["status"] = new OpenApiSchema { Type = "integer" },
+                                    ["detail"] = new OpenApiSchema { Type = "string" },
+                                    ["providedValue"] = new OpenApiSchema { Type = "integer" }
+                                }
+                            }
+                        }
+                    }
+                },
                 ["404"] = new OpenApiResponse
                 {
                     Description = "User not found",
@@ -592,6 +621,14 @@ public class Program
                             Example = new OpenApiObject
                             {
                                 ["message"] = new OpenApiString("Not Found - User with ID 99 not found.")
+                            },
+                            Schema = new OpenApiSchema
+                            {
+                                Type = "object",
+                                Properties = new Dictionary<string, OpenApiSchema>
+                                {
+                                    ["message"] = new OpenApiSchema { Type = "string" }
+                                }
                             }
                         }
                     }
