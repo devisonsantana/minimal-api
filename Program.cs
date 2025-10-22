@@ -506,7 +506,7 @@ public class Program
                 ["403"] = new OpenApiResponse
                 { Description = "Forbidden - User does not have ADMIN role" }
             }
-        }).Produces<UserModelView>(StatusCodes.Status200OK)
+        }).Produces<List<UserModelView>>(StatusCodes.Status200OK)
         .RequireAuthorization(new AuthorizeAttribute { Roles = nameof(Role.ADMIN) });
 
         app.MapGet("/user/{id}", ([FromRoute] int id, IUserService service) =>
@@ -881,12 +881,13 @@ public class Program
                     Description = "Invalid query parameters"
                 }
             }
-        }).AllowAnonymous();
+        }).Produces<List<VehicleModelView>>(StatusCodes.Status200OK)
+        .AllowAnonymous();
 
         app.MapGet("/vehicle/{id}", ([FromRoute] int id, IVehicleService vehicleService) =>
         {
             var vehicle = vehicleService.FindById(id);
-            if (vehicle != null) return Results.Ok(vehicle);
+            if (vehicle != null) return Results.Ok(new VehicleModelView(vehicle));
 
             return Results.NotFound(new { error = $"Vehicle with ID {id} not found" });
         }).WithOpenApi(operation => new OpenApiOperation
@@ -982,7 +983,8 @@ public class Program
                     }
                 }
             }
-        }).AllowAnonymous();
+        }).Produces<VehicleModelView>(StatusCodes.Status200OK)
+        .AllowAnonymous();
 
         app.MapPut("/vehicle/{id}", ([FromRoute] int id, VehicleDTO vehicleDTO, IVehicleService vehicleService) =>
         {
