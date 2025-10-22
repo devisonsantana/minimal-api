@@ -954,7 +954,7 @@ public class Program
             var vehicle = vehicleService.FindById(id);
             if (vehicle != null) return Results.Ok(new VehicleModelView(vehicle));
 
-            return Results.NotFound(new { error = $"Vehicle with ID {id} not found" });
+            return Results.NotFound(new { message = $"Vehicle with ID {id} not found" });
         }).WithOpenApi(operation => new OpenApiOperation
         {
             Summary = "Get vehicle by ID",
@@ -1012,14 +1012,14 @@ public class Program
                         {
                             Example = new OpenApiObject
                             {
-                                ["error"] = new OpenApiString("Vehicle with ID 99 not found")
+                                ["message"] = new OpenApiString("Vehicle with ID 99 not found")
                             },
                             Schema = new OpenApiSchema
                             {
                                 Type = "object",
                                 Properties = new Dictionary<string, OpenApiSchema>
                                 {
-                                    ["error"] = new OpenApiSchema { Type = "string" }
+                                    ["message"] = new OpenApiSchema { Type = "string" }
                                 }
                             }
                         }
