@@ -447,7 +447,6 @@ public class Program
                     }
                 }
             }).Produces<UserSignedModelView>(StatusCodes.Status200OK)
-            
             .AllowAnonymous();
         #endregion
 
@@ -802,7 +801,87 @@ public class Program
             var vehicles = service.FindAll(page: page ??= 1, name: name, brand: brand);
 
             return Results.Ok<List<Vehicle>>(vehicles);
-        }).WithTags("Vehicles").AllowAnonymous();
+        }).WithOpenApi(operation => new OpenApiOperation
+        {
+            Summary = "List vehicles",
+            Description = "Retrieves a paginated list of vehicles. You can filter by name and/or brand.",
+            Tags = new List<OpenApiTag> { new OpenApiTag { Name = "Vehicles" } },
+            Parameters = new List<OpenApiParameter>
+            {
+                new() {
+                    Name = "page",
+                    In = ParameterLocation.Query,
+                    Required = false,
+                    Description = "Page number for pagination (default: 1)",
+                    Schema = new OpenApiSchema { Type = "integer", Default = new OpenApiInteger(1) }
+                },
+                new() {
+                    Name = "name",
+                    In = ParameterLocation.Query,
+                    Required = false,
+                    Description = "Filter by vehicle name (partial match)",
+                    Schema = new OpenApiSchema { Type = "string" },
+                    Example = new OpenApiString("Civic")
+                },
+                new() {
+                    Name = "brand",
+                    In = ParameterLocation.Query,
+                    Required = false,
+                    Description = "Filter by brand name (partial match)",
+                    Schema = new OpenApiSchema { Type = "string" },
+                    Example = new OpenApiString("Honda")
+                }
+            },
+            Responses = new OpenApiResponses
+            {
+                ["200"] = new OpenApiResponse
+                {
+                    Description = "List of vehicles successfully retrieved",
+                    Content = new Dictionary<string, OpenApiMediaType>
+                    {
+                        ["application/json"] = new OpenApiMediaType
+                        {
+                            Schema = new OpenApiSchema
+                            {
+                                Type = "array",
+                                Items = new OpenApiSchema
+                                {
+                                    Type = "object",
+                                    Properties = new Dictionary<string, OpenApiSchema>
+                                    {
+                                        ["id"] = new OpenApiSchema { Type = "integer" },
+                                        ["name"] = new OpenApiSchema { Type = "string" },
+                                        ["brand"] = new OpenApiSchema { Type = "string" },
+                                        ["year"] = new OpenApiSchema { Type = "integer" }
+                                    }
+                                }
+                            },
+                            Example = new OpenApiArray
+                            {
+                                new OpenApiObject
+                                {
+                                    ["id"] = new OpenApiInteger(1),
+                                    ["name"] = new OpenApiString("Civic"),
+                                    ["brand"] = new OpenApiString("Honda"),
+                                    ["year"] = new OpenApiInteger(2023)
+                                },
+                                new OpenApiObject
+                                {
+                                    ["id"] = new OpenApiInteger(2),
+                                    ["name"] = new OpenApiString("Corolla"),
+                                    ["brand"] = new OpenApiString("Toyota"),
+                                    ["year"] = new OpenApiInteger(2021)
+                                }
+                            }
+                        }
+                    }
+                },
+                ["400"] = new OpenApiResponse
+                {
+                    Description = "Invalid query parameters (e.g., page number must be positive)"
+                }
+            }
+        }).AllowAnonymous();
 
         app.MapGet("/vehicle/{id}", ([FromRoute] int id, IVehicleService vehicleService) =>
         {
