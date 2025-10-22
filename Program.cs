@@ -836,9 +836,8 @@ public class Program
         #region Get all vehicles by name/brand [page = 1]
         app.MapGet("/vehicle", ([FromQuery] int? page, [FromQuery] string? name, [FromQuery] string? brand, IVehicleService service) =>
         {
-            var vehicles = service.FindAll(page: page ??= 1, name: name, brand: brand);
-
-            return Results.Ok<List<Vehicle>>(vehicles);
+            var vehicles = service.FindAll(page: page ??= 1, name: name, brand: brand).Select(v => new VehicleModelView(v)).ToList();
+            return Results.Ok(vehicles);
         }).WithOpenApi(operation => new OpenApiOperation
         {
             Summary = "List vehicles",
@@ -916,7 +915,33 @@ public class Program
                 },
                 ["400"] = new OpenApiResponse
                 {
-                    Description = "Invalid query parameters"
+                    Description = "Invalid query parameters",
+                    Content = new Dictionary<string, OpenApiMediaType>
+                    {
+                        ["application/json"] = new OpenApiMediaType
+                        {
+                            Example = new OpenApiObject
+                            {
+                                ["type"] = new OpenApiString("about:blank"),
+                                ["title"] = new OpenApiString("Invalid parameter"),
+                                ["status"] = new OpenApiInteger(400),
+                                ["detail"] = new OpenApiString("The value for 'page' must be greater than zero."),
+                                ["providedValue"] = new OpenApiInteger(0)
+                            },
+                            Schema = new OpenApiSchema
+                            {
+                                Type = "object",
+                                Properties = new Dictionary<string, OpenApiSchema>
+                                {
+                                    ["type"] = new OpenApiSchema { Type = "string" },
+                                    ["title"] = new OpenApiSchema { Type = "string" },
+                                    ["status"] = new OpenApiSchema { Type = "integer" },
+                                    ["detail"] = new OpenApiSchema { Type = "string" },
+                                    ["providedValue"] = new OpenApiSchema { Type = "integer" }
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }).Produces<List<VehicleModelView>>(StatusCodes.Status200OK)
