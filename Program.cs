@@ -888,8 +888,101 @@ public class Program
             var vehicle = vehicleService.FindById(id);
             if (vehicle != null) return Results.Ok(vehicle);
 
-            return Results.NotFound();
-        }).WithTags("Vehicles").AllowAnonymous();
+            return Results.NotFound(new { error = $"Vehicle with ID {id} not found" });
+        }).WithOpenApi(operation => new OpenApiOperation
+        {
+            Summary = "Get vehicle by ID",
+            Description = "Retrieves a specific vehicle by its unique identifier.",
+            Tags = [
+                new (){ Name = "Vehicles"}
+            ],
+            Parameters = [
+                new ()
+                {
+                    Name = "id",
+                    In = ParameterLocation.Path,
+                    Required = true,
+                    Description = "The unique identifier of the vehicle",
+                    Schema = new OpenApiSchema { Type = "integer" },
+                    Example = new OpenApiInteger(1)
+                }
+            ],
+            Responses = new()
+            {
+                ["200"] = new OpenApiResponse
+                {
+                    Description = "Vehicle found successfully",
+                    Content = new Dictionary<string, OpenApiMediaType>
+                    {
+                        ["application/json"] = new OpenApiMediaType
+                        {
+                            Schema = new OpenApiSchema
+                            {
+                                Type = "object",
+                                Properties = new Dictionary<string, OpenApiSchema>
+                                {
+                                    ["id"] = new OpenApiSchema { Type = "integer", Description = "Vehicle ID" },
+                                    ["name"] = new OpenApiSchema { Type = "string", Description = "Vehicle model name" },
+                                    ["brand"] = new OpenApiSchema { Type = "string", Description = "Vehicle brand" },
+                                    ["year"] = new OpenApiSchema { Type = "integer", Description = "Year of manufacture" }
+                                }
+                            },
+                            Example = new OpenApiObject
+                            {
+                                ["id"] = new OpenApiInteger(1),
+                                ["name"] = new OpenApiString("Civic"),
+                                ["brand"] = new OpenApiString("Honda"),
+                                ["year"] = new OpenApiInteger(2023)
+                            }
+                        }
+                    }
+                },
+                ["404"] = new OpenApiResponse
+                {
+                    Description = "Vehicle not found",
+                    Content = new Dictionary<string, OpenApiMediaType>
+                    {
+                        ["application/json"] = new OpenApiMediaType
+                        {
+                            Example = new OpenApiObject
+                            {
+                                ["error"] = new OpenApiString("Vehicle with ID 99 not found")
+                            }
+                        }
+                    }
+                },
+                ["400"] = new OpenApiResponse
+                {
+                    Description = "Invalid ID supplied",
+                    Content = new Dictionary<string, OpenApiMediaType>
+                    {
+                        ["application/json"] = new OpenApiMediaType
+                        {
+                            Example = new OpenApiObject
+                            {
+                                ["type"] = new OpenApiString("about:blank"),
+                                ["title"] = new OpenApiString("Invalid parameter"),
+                                ["status"] = new OpenApiInteger(400),
+                                ["detail"] = new OpenApiString("Invalid ID parameter — must be a positive integer or greater than zero"),
+                                ["providedValue"] = new OpenApiInteger(0)
+                            },
+                            Schema = new OpenApiSchema
+                            {
+                                Type = "object",
+                                Properties = new Dictionary<string, OpenApiSchema>
+                                {
+                                    ["type"] = new OpenApiSchema { Type = "string" },
+                                    ["title"] = new OpenApiSchema { Type = "string" },
+                                    ["status"] = new OpenApiSchema { Type = "integer" },
+                                    ["detail"] = new OpenApiSchema { Type = "string" },
+                                    ["providedValue"] = new OpenApiSchema { Type = "integer" }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }).AllowAnonymous();
 
         app.MapPut("/vehicle/{id}", ([FromRoute] int id, VehicleDTO vehicleDTO, IVehicleService vehicleService) =>
         {

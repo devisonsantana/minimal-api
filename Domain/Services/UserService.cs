@@ -16,7 +16,7 @@ namespace minimal_api.Domain.Services
 
         public List<User> FindAll(int page)
         {
-            if (page <= 0) throw new InvalidPageNumberException(page, $"The value for 'page' must be positive.");
+            if (page <= 0) throw new InvalidParameterException(page, $"The value for 'page' must be positive.");
             var query = _dbContext.Users.AsQueryable();
             int itemsPerPage = 10;
             return [.. query.Skip(((int)page - 1) * itemsPerPage).Take(itemsPerPage)];

@@ -5,10 +5,10 @@ using System.Threading.Tasks;
 
 namespace minimal_api.Domain.Exceptions
 {
-    public class InvalidPageNumberException : Exception
+    public class InvalidParameterException : Exception
     {
         public int ProvidedValue { get; }
-        public InvalidPageNumberException(int providedValue, string? message) : base(message)
+        public InvalidParameterException(int providedValue, string? message) : base(message)
         {
             ProvidedValue = providedValue;
         }

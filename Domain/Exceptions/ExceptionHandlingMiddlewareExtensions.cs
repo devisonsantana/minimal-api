@@ -55,7 +55,7 @@ namespace minimal_api.Domain.Exceptions
                     Exception = ex
                 });
             }
-            catch (InvalidPageNumberException ex)
+            catch (InvalidParameterException ex)
             {
                 context.Response.StatusCode = StatusCodes.Status400BadRequest;
                 await problemDetailsService.WriteAsync(new ProblemDetailsContext
