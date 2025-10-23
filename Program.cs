@@ -9,7 +9,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Any;
-using Microsoft.OpenApi.MicrosoftExtensions;
 using Microsoft.OpenApi.Models;
 using minimal_api.Domain.DTOs;
 using minimal_api.Domain.Entities;
@@ -478,7 +477,8 @@ public class Program
                     In = ParameterLocation.Query,
                     Description= "Number of the page (opcional, default = 1)",
                     Required = false,
-                    Schema = new OpenApiSchema { Type = "integer", Default = new OpenApiInteger(1) }
+                    Schema = new OpenApiSchema { Type = "integer", Default = new OpenApiInteger(1) },
+                    Example = new OpenApiInteger(1)
                 }
             ],
             Responses = new OpenApiResponses
@@ -535,7 +535,7 @@ public class Program
                 ["401"] = new OpenApiResponse
                 { Description = "Unauthorized - Missing or invalid JWT token" },
                 ["403"] = new OpenApiResponse
-                { Description = "Forbidden - User does not have ADMIN role" }
+                { Description = "Forbidden - Only ADMIN users can perform this operation" }
             }
         }).Produces<List<UserModelView>>(StatusCodes.Status200OK)
         .RequireAuthorization(new AuthorizeAttribute { Roles = nameof(Role.ADMIN) });
@@ -560,7 +560,8 @@ public class Program
                     In = ParameterLocation.Path,
                     Description= "Unique identifier of the user to retrieve",
                     Required = true,
-                    Schema = new OpenApiSchema { Type = "integer", Default = new OpenApiInteger(1) }
+                    Schema = new OpenApiSchema { Type = "integer" },
+                    Example = new OpenApiInteger(1)
                 }
             ],
             Responses = new OpenApiResponses
@@ -634,7 +635,7 @@ public class Program
                     }
                 },
                 ["401"] = new OpenApiResponse { Description = "Unauthorized - Missing or invalid JWT token" },
-                ["403"] = new OpenApiResponse { Description = "Forbidden - User does not have ADMIN role" }
+                ["403"] = new OpenApiResponse { Description = "Forbidden - Only ADMIN users can perform this operation" }
             }
         }).Produces<UserModelView>(StatusCodes.Status200OK)
         .RequireAuthorization(new AuthorizeAttribute { Roles = nameof(Role.ADMIN) });
@@ -733,15 +734,28 @@ public class Program
                                 {
                                     new OpenApiString("Vehicle name cannot be empty"),
                                     new OpenApiString("Vehicle brand cannot be empty"),
-                                    new OpenApiString("Civic's year cannot be too old, just above 1769"),
-                                    new OpenApiString("Civic's year cannot be in the future")
+                                    new OpenApiString("Year cannot be too old, 1769 or above"),
+                                    new OpenApiString("Year cannot be in the future")
+                                }
+                            },
+                            Schema = new OpenApiSchema
+                            {
+                                Type = "object",
+                                Description = "List of validation messages",
+                                Properties = new Dictionary<string, OpenApiSchema>
+                                {
+                                    ["messages"] = new OpenApiSchema
+                                    {
+                                        Type = "array",
+                                        Items = new OpenApiSchema { Type = "string" }
+                                    }
                                 }
                             }
                         }
                     }
                 },
-                ["401"] = new OpenApiResponse { Description = "Unauthorized — missing or invalid token" },
-                ["403"] = new OpenApiResponse { Description = "Forbidden — user does not have the required role (ADMIN or EDITOR)" }
+                ["401"] = new OpenApiResponse { Description = "Unauthorized — Missing or invalid token" },
+                ["403"] = new OpenApiResponse { Description = "Forbidden — User does not have the required role (ADMIN or EDITOR)" }
 
             }
         }).Produces<VehicleModelView>(StatusCodes.Status201Created)
@@ -842,13 +856,14 @@ public class Program
                                 {
                                     new OpenApiString("Vehicle name cannot be empty"),
                                     new OpenApiString("Vehicle brand cannot be empty"),
-                                    new OpenApiString("Civic's year cannot be too old, just above 1769"),
-                                    new OpenApiString("Civic's year cannot be in the future")
+                                    new OpenApiString("Year cannot be too old, 1769 or above"),
+                                    new OpenApiString("Year cannot be in the future")
                                 }
                             },
                             Schema = new OpenApiSchema
                             {
                                 Type = "object",
+                                Description = "List of validation messages",
                                 Properties = new Dictionary<string, OpenApiSchema>
                                 {
                                     ["message"] = new OpenApiSchema
@@ -861,8 +876,8 @@ public class Program
                         }
                     }
                 },
-                ["401"] = new OpenApiResponse { Description = "Unauthorized — missing or invalid token" },
-                ["403"] = new OpenApiResponse { Description = "Forbidden — user does not have the required role (ADMIN or EDITOR)" }
+                ["401"] = new OpenApiResponse { Description = "Unauthorized - Missing or invalid token" },
+                ["403"] = new OpenApiResponse { Description = "Forbidden - User does not have the required role (ADMIN or EDITOR)" }
 
             }
         }).Produces<List<VehicleModelView>>(StatusCodes.Status201Created)
@@ -882,14 +897,17 @@ public class Program
             Tags = new List<OpenApiTag> { new OpenApiTag { Name = "Vehicles" } },
             Parameters = new List<OpenApiParameter>
             {
-                new() {
+                new()
+                {
                     Name = "page",
                     In = ParameterLocation.Query,
                     Required = false,
                     Description = "Page number for pagination (default: 1)",
-                    Schema = new OpenApiSchema { Type = "integer", Default = new OpenApiInteger(1) }
+                    Schema = new OpenApiSchema { Type = "integer", Default = new OpenApiInteger(1) },
+                    Example = new OpenApiInteger(1)
                 },
-                new() {
+                new()
+                {
                     Name = "name",
                     In = ParameterLocation.Query,
                     Required = false,
@@ -897,7 +915,8 @@ public class Program
                     Schema = new OpenApiSchema { Type = "string" },
                     Example = new OpenApiString("Civic")
                 },
-                new() {
+                new()
+                {
                     Name = "brand",
                     In = ParameterLocation.Query,
                     Required = false,
@@ -1101,7 +1120,7 @@ public class Program
         app.MapPut("/vehicle/{id}", ([FromRoute] int id, VehicleDTO vehicleDTO, IVehicleService vehicleService) =>
         {
             var vehicle = vehicleService.FindById(id);
-            if (vehicle == null) return Results.NotFound("Vehicle can't be updated because it doesn't exists on our database");
+            if (vehicle == null) return Results.NotFound(new { message = "Vehicle can't be updated because it doesn't exists on our database" });
 
             var validation = ValidateVehicleDTO(vehicleDTO);
             if (validation.Messages.Count > 0)
@@ -1113,7 +1132,114 @@ public class Program
             vehicleService.Update(vehicle);
 
             return Results.NoContent();
-        }).WithTags("Vehicles")
+        }).WithOpenApi(operation => new OpenApiOperation
+        {
+            Summary = "Update vehicle by ID",
+            Description = "Updates an existing vehicle. Only ADMIN users can perform this operation",
+            Tags = [new() { Name = "Vehicles" }],
+            Parameters = [new()
+                {
+                    Name = "id",
+                    In = ParameterLocation.Path,
+                    Required = true,
+                    Description = "The unique identifier of the vehicle to be updated",
+                    Schema = new() { Type = "integer" },
+                    Example = new OpenApiInteger(1)
+                }
+            ],
+            RequestBody = new()
+            {
+                Description = "Vehicle data to update",
+                Required = true,
+                Content = new Dictionary<string, OpenApiMediaType>
+                {
+                    ["application/json"] = new()
+                    {
+                        Example = new OpenApiObject
+                        {
+                            ["name"] = new OpenApiString("Civic"),
+                            ["brand"] = new OpenApiString("Honda"),
+                            ["year"] = new OpenApiInteger(2023)
+                        },
+                        Schema = new OpenApiSchema
+                        {
+                            Type = "object",
+                            Properties = new Dictionary<string, OpenApiSchema>
+                            {
+                                ["name"] = new OpenApiSchema { Type = "string", Description = "Vehicle model name" },
+                                ["brand"] = new OpenApiSchema { Type = "string", Description = "Manufacturer brand" },
+                                ["year"] = new OpenApiSchema { Type = "integer", Description = "Year of manufacture" }
+                            },
+                            Required = new HashSet<string> { "name", "brand", "year" }
+                        }
+                    }
+                }
+            },
+            Responses = new()
+            {
+                ["204"] = new OpenApiResponse
+                {
+                    Description = "Vehicle updated successfully (no content returned)"
+                },
+                ["400"] = new OpenApiResponse
+                {
+                    Description = "Invalid request data",
+                    Content = new Dictionary<string, OpenApiMediaType>
+                    {
+                        ["application/json"] = new OpenApiMediaType
+                        {
+                            Schema = new OpenApiSchema
+                            {
+                                Type = "object",
+                                Description = "List of validation messages",
+                                Properties = new Dictionary<string, OpenApiSchema>
+                                {
+                                    ["messages"] = new OpenApiSchema
+                                    {
+                                        Type = "array",
+                                        Items = new OpenApiSchema { Type = "string" }
+                                    }
+                                }
+                            },
+                            Example = new OpenApiObject
+                            {
+                                ["messages"] = new OpenApiArray
+                                {
+                                    new OpenApiString("Vehicle name cannot be empty"),
+                                    new OpenApiString("Vehicle brand cannot be empty"),
+                                    new OpenApiString("Year cannot be too old, 1769 or above"),
+                                    new OpenApiString("Year cannot be in the future")
+                                }
+                            }
+                        }
+                    }
+                },
+                ["404"] = new OpenApiResponse
+                {
+                    Description = "Vehicle not found",
+                    Content = new Dictionary<string, OpenApiMediaType>
+                    {
+                        ["application/json"] = new OpenApiMediaType
+                        {
+                            Example = new OpenApiObject
+                            {
+                                ["message"] = new OpenApiString("Vehicle can't be updated because it doesn't exist in our database.")
+                            },
+                            Schema = new()
+                            {
+                                Type = "object",
+                                Properties = new Dictionary<string, OpenApiSchema>
+                                {
+                                    ["message"] = new OpenApiSchema { Type = "array", Items = new() { Type = "string" } }
+                                }
+                            }
+                        }
+                    }
+                },
+                ["401"] = new OpenApiResponse { Description = "Unauthorized - Missing or invalid JWT token" },
+                ["403"] = new OpenApiResponse { Description = "Forbidden - Only ADMIN users can perform this operation" }
+            }
+        }).Produces<ErrorValidation>(StatusCodes.Status400BadRequest)
         .RequireAuthorization(new AuthorizeAttribute { Roles = nameof(Role.ADMIN) });
         #endregion
 
@@ -1121,10 +1247,57 @@ public class Program
         app.MapDelete("/vehicle/{id}", ([FromRoute] int id, IVehicleService vehicleService) =>
         {
             var vehicle = vehicleService.FindById(id);
-            if (vehicle == null) return Results.NotFound("Vehicle can't be deleted because it doesn't exists on our database");
+            if (vehicle == null) return Results.NotFound(new { message = "Vehicle can't be deleted because it doesn't exists on our database" });
             vehicleService.Delete(vehicle);
             return Results.NoContent();
-        }).WithTags("Vehicles")
+        }).WithOpenApi(operation => new OpenApiOperation
+        {
+            Summary = "Delete vehicle by ID",
+            Description = "Removes a vehicle from the database. Only ADMIN users can perform this operation",
+            Tags = [new() { Name = "Vehicles" }],
+            Parameters = [
+                new OpenApiParameter
+                {
+                    Name = "id",
+                    In = ParameterLocation.Path,
+                    Required = true,
+                    Description = "The unique identifier of the vehicle to be deleted",
+                    Schema = new OpenApiSchema { Type = "integer" },
+                    Example = new OpenApiInteger(1)
+                }
+            ],
+            Responses = new()
+            {
+                ["204"] = new OpenApiResponse
+                {
+                    Description = "Vehicle successfully deleted (no content returned)"
+                },
+                ["404"] = new OpenApiResponse
+                {
+                    Description = "Vehicle not found",
+                    Content = new Dictionary<string, OpenApiMediaType>
+                    {
+                        ["application/json"] = new OpenApiMediaType
+                        {
+                            Example = new OpenApiObject
+                            {
+                                ["message"] = new OpenApiString("Vehicle can't be deleted because it doesn't exist in our database.")
+                            },
+                            Schema = new OpenApiSchema
+                            {
+                                Type = "object",
+                                Properties = new Dictionary<string, OpenApiSchema>
+                                {
+                                    ["message"] = new OpenApiSchema { Type = "string" }
+                                }
+                            }
+                        }
+                    }
+                },
+                ["401"] = new OpenApiResponse { Description = "Unauthorized - Missing or invalid JWT token" },
+                ["403"] = new OpenApiResponse { Description = "Forbidden - Only ADMIN users can perform this operation" }
+            }
+        })
         .RequireAuthorization(new AuthorizeAttribute { Roles = nameof(Role.ADMIN) });
         #endregion
 
